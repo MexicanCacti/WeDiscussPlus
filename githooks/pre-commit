@@ -1,11 +1,30 @@
+#!/bin/bash
+
 echo "Running tests before commit..."
 
-cmake --build build --target tests
+BUILD_DIR="${PWD}/build"
+CMAKE_TEMP_FILES_DIR="${BUILD_DIR}/temp"
 
-# If tests fail, exit with a non-zero status to prevent the commit
-if [ $? -ne 0 ]; then
-    echo "Tests failed. Commit aborted!"
-    exit 1
+echo "BUILD_DIR: $BUILD_DIR"
+echo "CMAKE_TEMP_FILES_DIR: $CMAKE_TEMP_FILES_DIR"
+
+if [ ! -d "$CMAKE_TEMP_FILES_DIR" ]; then
+    echo "Creating build/temp directory..."
+    mkdir -p "$CMAKE_TEMP_FILES_DIR"
+else
+   echo "Cleaning up previous CMake files..."
+   rm -rf "${CMAKE_TEMP_FILES_DIR}/*"
+   echo "Using existing build/temp directory..."
 fi
 
-echo "All tests passed. Proceeding with commit."
+echo "Running CMake to configure the project..."
+cd "$CMAKE_TEMP_FILES_DIR" || { echo "Failed to change directory"; exit 1; }
+cmake ../.. || { echo "CMake configuration failed"; exit 1; }
+
+echo "Building the project..."
+cmake --build . || { echo "Build failed"; exit 1; }
+
+echo "Running tests..."
+ctest --output-on-failure || { echo "Tests failed! Commit aborted!"; exit 1; }
+
+echo "All tests passed! Proceeding with commit."
