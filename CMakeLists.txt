@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+enable_testing()
+
 #Put CMake Build Files in Temp Folder
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build/temp)
 
@@ -25,24 +27,16 @@ include_directories(include)
 #Add Libraries
 add_library(core STATIC ${INCLUDE_SOURCES})
 
-target_include_directories(core PUBLIC ${CMAKE_SOURCE_DIR}/include)
-
-include(FetchContent)
-FetchContent_Declare(
-  google_test
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        main
+target_include_directories(core PUBLIC 
+    ${CMAKE_SOURCE_DIR}/include/client_include
+    ${CMAKE_SOURCE_DIR}/include/server_include
+    ${CMAKE_SOURCE_DIR}/include/shared_include
 )
-
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(google_test)
 
 #Recursively build other projects
 add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(tests)
-
 
 #Private: Only files in project need the library/include
 #Public:  (Libary/Include) need as dependency AND files call functions from it
