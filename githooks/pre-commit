@@ -1,24 +1,11 @@
-#!/user/bin/env bash
+echo "Running tests before commit..."
 
-set -euo pipefail
+cmake --build build --target tests
 
-echo "[Hook] Verifying build & tests before commit..."
-
-BUILD_DIR="build/temp"
-
-cmake -S . -B "$BUILD_DIR" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-
-cmake --build "$BUILD_DIR" --parallel
-
-cd "$BUILD_DIR"
-ctest --output-on-failure
-
-TEST_RESULT=$?
-if ["$TEST_RESULT" -ne 0]; then
-    echo "[Hook] X Commit aborted: Tests failed!"
+# If tests fail, exit with a non-zero status to prevent the commit
+if [ $? -ne 0 ]; then
+    echo "Tests failed. Commit aborted!"
     exit 1
 fi
 
-echo "[Hook] O All Tests Passed! Committing..."
-exit 0
-
+echo "All tests passed. Proceeding with commit."

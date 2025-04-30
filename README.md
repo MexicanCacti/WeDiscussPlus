@@ -30,3 +30,8 @@ build/bin/Debug/
 ```bash
 build/bin/Release/
 ```
+
+## Set up Git Hooks
+```bash
+git config core.hooksPath WeDiscussPlus/githooks
+```
