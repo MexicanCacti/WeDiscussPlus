@@ -17,5 +17,6 @@ enum class MessageType{
     USER_TO_CHATROOM_MESSAGE,
     UPDATE_USER_MAP,
     UPDATE_CHATROOM_MAP,
-    UNDEFINED
+    UNDEFINED,
+    TEST
 };

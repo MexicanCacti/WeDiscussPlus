@@ -3,8 +3,8 @@
 #include "server_include/LoadBalancer.hpp"
 #include "server_include/ChatroomManager.hpp"
 #include "shared_include/Message.hpp"
-class ChatroomManagerBalancer : public LoadBalancer<Message, ChatroomManager>{
 
+class ChatroomManagerBalancer : public LoadBalancer<Message, ChatroomManager<Message>>{
 };
 
 #endif

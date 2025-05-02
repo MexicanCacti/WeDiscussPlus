@@ -6,7 +6,6 @@
 #include "shared_include/Message.hpp"
 
 class UserManagerBalancer : public LoadBalancer<Message, UserManager<Message>>{
-    
 };
 
 #endif

@@ -1,8 +1,6 @@
-#include <iostream>
 #include <gtest/gtest.h>
 #include "shared_include/Message.hpp"
 #include "shared_include/MessageBuilder.hpp"
-#include "shared_include/MessageCreator.hpp"
 
 std::string messageContents = "Test Contents";
 std::string toUsername = "Test ToUsername";
@@ -11,7 +9,7 @@ std::string fromUsername = "Test FromUsername";
 int fromUserID = 100;
 int toChatroomID = 0;
 int fromChatroomID = 0;
-MessageType messageType = MessageType::LOGIN;
+MessageType messageType = MessageType::TEST;
 
 void ExpectDefaultMessageState(const Message&);
 
@@ -25,6 +23,7 @@ TEST(MessageTest, CreateMessageObject){
 
 TEST(MessageTest, FullMessageBuilderProcess){
     MessageBuilder messageBuilder = MessageBuilder();
+
     ExpectDefaultMessageState(messageBuilder.buildMessage());
     buildMessage(messageBuilder, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
     ExpectMessageState(messageBuilder.buildMessage(), messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
@@ -38,7 +37,7 @@ void ExpectDefaultMessageState(const Message& message){
     EXPECT_EQ(message.getFromUserID(), -1);
     EXPECT_EQ(message.getToChatroomID(), -1);
     EXPECT_EQ(message.getFromChatroomID(), -1);
-    EXPECT_EQ(message.getMessageType(), MessageType::UNDEFINED);
+    EXPECT_EQ(message.getMessageType(), MessageType::TEST);
 }
 
 void ExpectMessageState(const Message& message, const std::string& messageContents, const std::string& toUsername, const int toUserID, const std::string& fromUsername, const int fromUserID, const int toChatroomID, const int fromChatroomID, const MessageType messageType){

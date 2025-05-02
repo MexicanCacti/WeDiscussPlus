@@ -2,26 +2,23 @@
 
 template<typename WorkType>
 void UserManager<WorkType>::start(){
-    if(setUpDone){
-        checkForWork();
-        return;
-    }
-
     // Call function to set up connection to database & set up maps!
     checkForWork();
 }
 
-/* NOTE: Maybe Try/Catch statement so if something happens to thread, then it will crash gracefully? */
 template<typename WorkType>
 void UserManager<WorkType>::checkForWork(){
     try{
         while(_shouldDoWork){
+            _processQueueMutex.lock();
             if(_processQueue.empty()){
+                _processQueueMutex.unlock();
                 std::this_thread::sleep_for(2s);
                 continue;
             }
     
             WorkType workToDo = std::move(_processQueue.front());
+            _processQueueMutex.unlock();
             std::unique_ptr<WorkType> work = workToDo;
             _processQueue.pop();
     
@@ -33,6 +30,13 @@ void UserManager<WorkType>::checkForWork(){
     catch(const std::exception& e){
         std::cerr << "Thread Exception: " << e.what() << std::endl;
     }
+}
+
+template<typename WorkType>
+void UserManager<WorkType>::addWork(WorkType& work){
+    _processQueueMutex.lock();
+    _processQueue.push(work);
+    _processQueueMutex.unlock();
 }
 
 template<typename WorkType>

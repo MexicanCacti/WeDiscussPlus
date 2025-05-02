@@ -4,17 +4,18 @@
 #include <thread>
 #include <unordered_map>
 #include <mutex>
-#include "server_include/Server.hpp"
+class Server; // Needed to remove circular dependency
 
 template<typename WorkType, typename WorkerType>
 class LoadBalancer{
     protected:
         std::weak_ptr<Server> _serverReference;
         std::queue<WorkType> _workQueue;
+        std::unordered_map<int, std::shared_ptr<WorkerType>> _workers;
         std::unordered_map<int, std::thread> _workerThreads;
         std::mutex _workQueueMutex;
         bool _running = true;
-        static int _workerID = 0;
+        inline static int _workerID = 0;
 
         virtual void startWorker();
         virtual void findBestWorker(WorkType& work);
@@ -25,7 +26,7 @@ class LoadBalancer{
         LoadBalancer(const int workerAmount, std::weak_ptr<Server> serverReference);
         void waitForWork();
         void stopAllThreads();
-        inline std::unordered_map<int, std::thread> getWorkerThreads() const {return _workerThreads;}
+        inline std::unordered_map<int, std::shared_ptr<WorkerType>> getWorkers() const {return _workers;}
         ~LoadBalancer();
 };
 

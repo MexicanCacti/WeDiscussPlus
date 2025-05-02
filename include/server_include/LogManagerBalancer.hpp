@@ -3,7 +3,7 @@
 #include "server_include/LoadBalancer.hpp"
 #include "server_include/LogManager.hpp"
 #include "shared_include/Message.hpp"
-class LogManagerBalancer : public LoadBalancer<Message, LogManager>{
+class LogManagerBalancer : public LoadBalancer<Message, LogManager<Message>>{
 
 };
 

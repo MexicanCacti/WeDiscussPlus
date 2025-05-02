@@ -1,4 +1,4 @@
-#include "Message.hpp"
+#include "shared_include/Message.hpp"
 
 #ifndef MESSAGEBUILDERINTERFACE_HPP
 #define MESSAGEBUILDERINTERFACE_HPP

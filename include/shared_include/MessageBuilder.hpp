@@ -1,10 +1,11 @@
-#include "MessageBuilderInterface.hpp"
-#include "Message.hpp"
+#include "shared_include/MessageBuilderInterface.hpp"
+#include "shared_include/Message.hpp"
 #ifndef MESSAGEBUILDER_HPP
 #define MESSAGEBUILDER_HPP
 class MessageBuilder : public MessageBuilderInterface{
     private:
         Message _message;
+
     public:
         MessageBuilder(){
             _message = Message();

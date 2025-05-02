@@ -3,38 +3,44 @@
 
 #include <atomic>
 #include <thread>
+#include <iostream>
 #include "server_include/UserManagerBalancer.hpp"
 #include "server_include/ChatroomManagerBalancer.hpp"
 #include "server_include/LogManagerBalancer.hpp"
+#include "Message.hpp"
 
 class Server : public std::enable_shared_from_this<Server> {
     private:
         const int _numUserManagers = 2;
         const int _numChatroomManagers = 2;
         const int _numLogManagers = 2;
-        std::atomic<bool> _isRunning = false;
+        std::atomic<bool> _isRunning = true;
         int _port;
         std::string _serverIP;
-        // MAP TO USERID: SOCKET
-        std::unique_ptr<UserManagerBalancer> _userManagerBalancer = std::make_unique<UserManagerBalancer>(_numUserManagers, std::weak_ptr<Server>(shared_from_this()));
-        std::unique_ptr<ChatroomManagerBalancer> _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer>(_numChatroomManagers, std::weak_ptr<Server>(shared_from_this()));
-        std::unique_ptr<LogManagerBalancer> _logManagerBalancer = std::make_unique<LogManagerBalancer>(_numLogManagers, std::weak_ptr<Server>(shared_from_this()));
+        // MAP TO USERID: SOCKET ... Need to create!
+        std::unique_ptr<UserManagerBalancer> _userManagerBalancer;
+        std::unique_ptr<ChatroomManagerBalancer> _chatroomManagerBalancer;
+        //std::unique_ptr<LogManagerBalancer> _logManagerBalancer = std::make_unique<LogManagerBalancer>(_numLogManagers, std::weak_ptr<Server>(shared_from_this()));
 
         std::unordered_map<int, std::thread> userManagerThreads;
         std::unordered_map<int, std::thread> chatroomManagerThreads;
-        std::unordered_map<int, std::thread> logManagerThreads;
+        //std::unordered_map<int, std::thread> logManagerThreads;
 
-
+    private:
+        void initBalancers(){
+            _userManagerBalancer = std::make_unique<UserManagerBalancer>(_numUserManagers, std::weak_ptr<Server>(shared_from_this()));
+            _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer>(_numChatroomManagers, std::weak_ptr<Server>(shared_from_this()));
+        }
     public:
         void run(int port){
             startServer(port);
             for(int i = 0 ; i < 3; ++i){
-                std::this_thread::sleep_for(std::chrono::seconds(1));
+                std::this_thread::sleep_for(std::chrono::seconds(2));
             }
             stopServer();
         }
         void startServer(int port){
-            _isRunning = true;
+            initBalancers();
             std::thread(listenForConnections);
             std::cout << "Server Started\n";
         }
@@ -45,6 +51,9 @@ class Server : public std::enable_shared_from_this<Server> {
         }
 
         bool IsRunning() const {return _isRunning;}
+
+        void addMessageToUserBalancer(Message& message);
+        void addMessageToChatroomBalancer(Message& message);
 
         // Open Socket, temporarily store w/ userID = -1
         // Then handleLoginRequest, which sends the socket & the Message received to the UserManagerBalancer
@@ -57,7 +66,7 @@ class Server : public std::enable_shared_from_this<Server> {
         void startLogManagers(int);
         void startUserManagers(int);
         void handleLoginRequest();
-        void processResponse();
+        void processResponse(); // PUT IN A TRY CATCH
 };
 
 #endif
