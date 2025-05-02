@@ -1,29 +1,63 @@
-#include <atomic>
-
 #ifndef SERVER_HPP
 #define SERVER_HPP
-class Server{
+
+#include <atomic>
+#include <thread>
+#include "server_include/UserManagerBalancer.hpp"
+#include "server_include/ChatroomManagerBalancer.hpp"
+#include "server_include/LogManagerBalancer.hpp"
+
+class Server : public std::enable_shared_from_this<Server> {
     private:
-        std::atomic<bool> isRunning = false;
+        const int _numUserManagers = 2;
+        const int _numChatroomManagers = 2;
+        const int _numLogManagers = 2;
+        std::atomic<bool> _isRunning = false;
+        int _port;
+        std::string _serverIP;
+        // MAP TO USERID: SOCKET
+        std::unique_ptr<UserManagerBalancer> _userManagerBalancer = std::make_unique<UserManagerBalancer>(_numUserManagers, std::weak_ptr<Server>(shared_from_this()));
+        std::unique_ptr<ChatroomManagerBalancer> _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer>(_numChatroomManagers, std::weak_ptr<Server>(shared_from_this()));
+        std::unique_ptr<LogManagerBalancer> _logManagerBalancer = std::make_unique<LogManagerBalancer>(_numLogManagers, std::weak_ptr<Server>(shared_from_this()));
+
+        std::unordered_map<int, std::thread> userManagerThreads;
+        std::unordered_map<int, std::thread> chatroomManagerThreads;
+        std::unordered_map<int, std::thread> logManagerThreads;
+
+
     public:
-        void run(){
-            startServer();
+        void run(int port){
+            startServer(port);
             for(int i = 0 ; i < 3; ++i){
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
             stopServer();
         }
-        void startServer(){
-            isRunning = true;
+        void startServer(int port){
+            _isRunning = true;
+            std::thread(listenForConnections);
             std::cout << "Server Started\n";
         }
 
         void stopServer(){
-            isRunning = false;
+            _isRunning = false;
             std::cout << "Server Stopped!\n";
         }
-        
-        bool IsRunning() const {return isRunning;}
+
+        bool IsRunning() const {return _isRunning;}
+
+        // Open Socket, temporarily store w/ userID = -1
+        // Then handleLoginRequest, which sends the socket & the Message received to the UserManagerBalancer
+        // UserManagerBalancer then handles authentication... Need a way to signal back to server that the user was successfully logged in
+        // Once successfuly signal sent, then needs to send a signal to every relevant worker thread that to update cached value (if it has) of that user/chatroom
+        // Then a new thread is created running processResponse() for that socket
+        void listenForConnections() {while(_isRunning){};}
+
+        void startChatroomManagers(int);
+        void startLogManagers(int);
+        void startUserManagers(int);
+        void handleLoginRequest();
+        void processResponse();
 };
 
 #endif
