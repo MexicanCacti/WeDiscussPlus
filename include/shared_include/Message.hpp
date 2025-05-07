@@ -1,8 +1,12 @@
-#include "MessageType.hpp"
-#include <string>
-
 #ifndef MESSAGE_HPP
 #define MESSAGE_HPP
+
+#include "MessageType.hpp"
+#include "shared_include/MessageBuilder.hpp"
+#include <string>
+#include <vector>
+#include <iostream>
+
 class Message{
     private:
         std::string _messageContents;
@@ -17,40 +21,39 @@ class Message{
         //Chatroom _chatroom
         //Atomic-safe hashmap of ChatroomID: ChatroomObject
         //Atomic-safe hashmap of UserID : UserName
-    public:
-        inline Message(): _messageContents(""), _to_user_name(""), _to_user_id(-1), _from_user_name(""), _from_user_id(-1), _to_chatroom_id(-1), _from_chatroom_id(-1), _messageType(MessageType::UNDEFINED){};
 
-        inline void setMessageContents(std::string messageContents) {_messageContents = std::move(messageContents);}
+        void serializeInt(std::vector<char>& buffer, int val);
+        int deserializeInt(const std::vector<char>& buffer, size_t& offset);
+        void serializeString(std::vector<char>& buffer, const std::string& str);
+        std::string deserializeString(const std::vector<char>& buffer, size_t& offset);
+    public:
+        Message() : _messageContents(""), _to_user_name(""), _to_user_id(-1), _from_user_name(""), _from_user_id(-1), _to_chatroom_id(-1), _from_chatroom_id(-1), _messageType(MessageType::UNDEFINED) {};
+
+        Message(MessageBuilder* messageBuilder);
 
         inline std::string getMessageContents() const {return _messageContents;}
 
-        void setToUsername(std::string username) {_to_user_name = std::move(username);}
-
         inline std::string getToUsername() const {return _to_user_name;}
-
-        inline void setToUserID(int userID) {_to_user_id = userID;}
 
         inline int getToUserID() const {return _to_user_id;}
 
-        inline void setFromUsername(std::string username) {_from_user_name = std::move(username);}
-
         inline std::string getFromUsername() const {return _from_user_name;}
-
-        inline void setFromUserID(int userID) {_from_user_id = userID;}
 
         inline int getFromUserID() const {return _from_user_id;}
 
-        inline void setToChatroomID(int chatroomID) {_to_chatroom_id = chatroomID;}
-
         inline int getToChatroomID() const {return _to_chatroom_id;}
-
-        inline void setFromChatroomID(int chatroomID) {_from_chatroom_id = chatroomID;}
 
         inline int getFromChatroomID() const {return _from_chatroom_id;}
 
-        inline void setMessageType(MessageType messageType) {_messageType = std::move(messageType);}
-
         inline MessageType getMessageType() const {return _messageType;}
+
+        std::vector<char> serialize();
+
+        static Message deserialize(const std::vector<char>& data);
+
+        std::string messageTypeToString();
+        
+        void printMessage();
 };
 
 #endif

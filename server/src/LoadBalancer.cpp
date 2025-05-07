@@ -2,15 +2,6 @@
 #include "server_include/Server.hpp"
 
 template<typename WorkType, typename WorkerType>
-void LoadBalancer<WorkType, WorkerType>::startWorker(){
-    auto worker = std::make_shared<WorkerType>(_serverReference);
-    _workers[++_workerID] = worker;
-    _workerThreads[_workerID] = std::thread([worker]{
-        worker->start();
-    });
-}
-
-template<typename WorkType, typename WorkerType>
 void LoadBalancer<WorkType, WorkerType>::findBestWorker(WorkType& work){
     int smallestQueue = INT_MAX;
     for(auto& worker : _workers){
@@ -34,16 +25,15 @@ void LoadBalancer<WorkType, WorkerType>::pushWork(WorkType& work){
 }
 
 template<typename WorkType, typename WorkerType>
-LoadBalancer<WorkType, WorkerType>::LoadBalancer(const int workerAmount, std::weak_ptr<Server> serverReference) : _serverReference(serverReference){
-    int i = workerAmount;
-    // Ensure at least 1 Worker!
-    do{
-        startWorker();
-        --i;
+LoadBalancer<WorkType, WorkerType>::LoadBalancer(const int workerAmount) {
+    for (int i = 0; i <= workerAmount; ++i) {
+        int id = _workerID++;
+        auto worker = std::make_shared<WorkerType>();
+        _workers[id] = worker;
+        _workerThreads[id] = std::thread([worker] {
+            worker->start();
+        });
     }
-    while(i > 0);
-
-    waitForWork();
 }
 
 template<typename WorkType, typename WorkerType>

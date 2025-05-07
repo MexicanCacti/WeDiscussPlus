@@ -9,7 +9,7 @@
 #include "server_include/LogManagerBalancer.hpp"
 #include "Message.hpp"
 
-class Server : public std::enable_shared_from_this<Server> {
+class Server {
     private:
         const int _numUserManagers = 2;
         const int _numChatroomManagers = 2;
@@ -28,8 +28,8 @@ class Server : public std::enable_shared_from_this<Server> {
 
     private:
         void initBalancers(){
-            _userManagerBalancer = std::make_unique<UserManagerBalancer>(_numUserManagers, std::weak_ptr<Server>(shared_from_this()));
-            _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer>(_numChatroomManagers, std::weak_ptr<Server>(shared_from_this()));
+            _userManagerBalancer = std::make_unique<UserManagerBalancer>(_numUserManagers);
+            _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer>(_numChatroomManagers);
         }
     public:
         void run(int port){

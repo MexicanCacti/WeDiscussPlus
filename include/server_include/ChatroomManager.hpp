@@ -11,13 +11,13 @@ template<typename WorkType>
 class ChatroomManager{
     private:
         std::atomic<bool> _shouldDoWork = true;
-        std::weak_ptr<Server> _serverPointer = nullptr; //B/c weak_ptr ... remmeber to call lock() before to check if exists by getting shared_ptr
+        //std::weak_ptr<Server> _serverPointer = nullptr; //B/c weak_ptr ... remmeber to call lock() before to check if exists by getting shared_ptr
         // chatroom Map ... Integer : Chatroom ... Again just use the DB to search/insert chatroom info!
 
         std::queue<WorkType> _processQueue;
         std::mutex _processQueueMutex;
 public:
-    inline ChatroomManager(std::weak_ptr<Server> serverPointer) : _serverPointer(serverPointer) {;}
+    ChatroomManager();
     void start();
     inline void stop() {_shouldDoWork = false;}
     void checkForWork();

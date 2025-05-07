@@ -77,6 +77,21 @@
         "xlocnum": "cpp",
         "xloctime": "cpp",
         "xtree": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "bitset": "cpp",
+        "cinttypes": "cpp",
+        "codecvt": "cpp",
+        "complex": "cpp",
+        "coroutine": "cpp",
+        "cstdarg": "cpp",
+        "cwctype": "cpp",
+        "resumable": "cpp",
+        "future": "cpp",
+        "numeric": "cpp",
+        "random": "cpp",
+        "ranges": "cpp",
+        "source_location": "cpp",
+        "stack": "cpp",
+        "strstream": "cpp"
     }
 }

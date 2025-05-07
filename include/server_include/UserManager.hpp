@@ -13,7 +13,7 @@ template<typename WorkType>
 class UserManager{
     private:
         std::atomic<bool> _shouldDoWork = true;
-        std::weak_ptr<Server> _serverPointer = nullptr; //B/c weak_ptr ... remmeber to call lock() before to check if exists by getting shared_ptr
+        //std::weak_ptr<Server> _serverPointer = nullptr; //B/c weak_ptr ... remmeber to call lock() before to check if exists by getting shared_ptr
 
         // static std::unordered_map<int, User> _userMap;
 
@@ -24,7 +24,7 @@ class UserManager{
         std::queue<WorkType> _processQueue;
         std::mutex _processQueueMutex;
     public:
-        inline UserManager(std::weak_ptr<Server> serverPointer) : _serverPointer(serverPointer) {;}
+        UserManager();
         void start();
         inline void stop() {_shouldDoWork = false;}
         void checkForWork();

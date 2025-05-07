@@ -1,52 +1,52 @@
-#include "shared_include/MessageBuilderInterface.hpp"
-#include "shared_include/Message.hpp"
+
 #ifndef MESSAGEBUILDER_HPP
 #define MESSAGEBUILDER_HPP
-class MessageBuilder : public MessageBuilderInterface{
+
+class Message;
+
+#include "shared_include/MessageType.hpp"
+#include <string>
+
+class MessageBuilder {
     private:
-        Message _message;
+        std::string _messageContents;
+        std::string _to_user_name;
+        int _to_user_id;
+        std::string _from_user_name;
+        int _from_user_id;
+        int _to_chatroom_id;
+        int _from_chatroom_id;
+        MessageType _messageType;
 
     public:
-        MessageBuilder(){
-            _message = Message();
-        }
+        MessageBuilder() = default;
+        MessageBuilder(Message* message);
 
-        void setMessageContents(std::string messageContents) override {
-            _message.setMessageContents(messageContents);
-        }
+        inline void setMessageContents(const std::string& messageContents) {_messageContents = messageContents;}
+        inline const std::string& getMessageContents() const {return _messageContents;}
+        
+        inline void setToUsername(const std::string& username) {_to_user_name = username;}
+        inline const std::string& getToUsername() const {return _to_user_name;}
+        
+        inline void setToUserID(int userID) {_to_user_id = userID;}
+        inline int getToUserID() const {return _to_user_id;}
+        
+        inline void setFromUsername(const std::string& username) {_from_user_name = username;}
+        inline const std::string& getFromUsername() const {return _from_user_name;}
+        
+        inline void setFromUserID(int userID) {_from_user_id = userID;}
+        inline int getFromUserID() const {return _from_user_id;}
+        
+        inline void setToChatroomID(int chatroomID) {_to_chatroom_id = chatroomID;}
+        inline int getToChatroomID() const {return _to_chatroom_id;}
+        
+        inline void setFromChatroomID(int chatroomID) {_from_chatroom_id = chatroomID;}
+        inline int getFromChatroomID() const {return _from_chatroom_id;}
+        
+        inline void setMessageType(MessageType messageType) {_messageType = messageType;}
+        inline MessageType getMessageType() const {return _messageType;}   
 
-        void setToUsername(std::string username) override {
-            _message.setToUsername(username);
-        }
-
-        void setToUserID(int userID) override {
-            _message.setToUserID(userID);
-        }
-
-        void setFromUsername(std::string username) override {
-            _message.setFromUsername(username);
-        }
-
-        void setFromUserID(int userID) override {
-            _message.setFromUserID(userID);
-        }
-
-        void setToChatroomID(int chatroomID) override {
-            _message.setToChatroomID(chatroomID);
-        }
-
-        void setFromChatroomID(int chatroomID) override{
-            _message.setFromChatroomID(chatroomID);
-        }
-
-        void setMessageType(MessageType messageType){
-            _message.setMessageType(messageType);
-        }
-
-        Message buildMessage() override{
-            return _message;
-        }
+        Message buildMessage();
 };
-
 
 #endif

@@ -1,3 +1,8 @@
 /build/bin/*
 /build/lib/*
 /build/temp/*
+/libs/asio-1.30.2/src/examples/*
+/libs/asio-1.30.2/src/tests/*
+/libs/asio-1.30.2/src/tools/*
+/libs/asio-1.30.2/include/Makefile.*
+/libs/asio-1.30.2/src/Makefile.*

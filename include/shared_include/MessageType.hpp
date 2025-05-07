@@ -18,5 +18,8 @@ enum class MessageType{
     UPDATE_USER_MAP,
     UPDATE_CHATROOM_MAP,
     UNDEFINED,
-    TEST
+    TEST,
+    SEND,
+    RECV,
+    ACK
 };

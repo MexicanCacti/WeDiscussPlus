@@ -22,11 +22,10 @@ TEST(MessageTest, CreateMessageObject){
 }
 
 TEST(MessageTest, FullMessageBuilderProcess){
-    MessageBuilder messageBuilder = MessageBuilder();
-
-    ExpectDefaultMessageState(messageBuilder.buildMessage());
+    MessageBuilder messageBuilder;
+    ExpectDefaultMessageState(Message(&messageBuilder));
     buildMessage(messageBuilder, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
-    ExpectMessageState(messageBuilder.buildMessage(), messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
+    ExpectMessageState(Message(&messageBuilder), messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
 }
 
 void ExpectDefaultMessageState(const Message& message){

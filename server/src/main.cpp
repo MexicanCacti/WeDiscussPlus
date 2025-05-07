@@ -15,8 +15,8 @@ int main(int argc, char* argv[]){
         }
     #endif
 
-    auto server = std::make_shared<Server>();
-    server->run(port);
+    auto server = Server();
+    server.run(port);
 
     std::cout << "Server Ended & Cleaned up\nPress any key to exit...";
     std::cin.get();
