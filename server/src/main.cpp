@@ -15,9 +15,9 @@ int main(int argc, char* argv[]){
         }
     #endif
 
-    auto server = Server();
-    server.run(port);
-
+    auto server = Server(port);
+    // Eventually, we should have server run on its own thread, then here the user can input commands to stop the server.
+    server.startServer();
     std::cout << "Server Ended & Cleaned up\nPress any key to exit...";
     std::cin.get();
     return 0;

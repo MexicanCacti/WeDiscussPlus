@@ -1,9 +1,11 @@
-#include <unordered_map>
-#include <map>
-#include <string>
-#include <shared_include/Message.hpp>
 #ifndef CHATROOM_HPP
 #define CHATROOM_HPP
+
+#include <unordered_map>
+#include <string>
+#include <vector>
+#include <shared_include/Message.hpp>
+
 class Chatroom{
     private:
         static int _IDCounter;

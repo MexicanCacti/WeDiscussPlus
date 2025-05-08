@@ -1,18 +1,23 @@
-#ifndef LOGMANGER_HPP
+#ifndef LOGMANAGER_HPP
 #define LOGMANAGER_HPP
-#include <queue>
-#include <mutex>
+#include "server_include/Manager.hpp"
+#include "shared_include/Message.hpp"
+
+class Server;
 
 template<typename WorkType>
-class LogManager{
+class LogManager : public Manager<WorkType> {
     private:
-        std::queue<WorkType> _processQueue;
-        std::mutex _processQueueMutex;
+        void getUserMessages(int userID);
+        void getChatroomMessages(int chatroomID);
+        void answerLogRequest(WorkType& message);
+        void storeMessage(WorkType& message);
+        void setUpDatabaseConnection() override;
     public:
-        int getQueueSize() const {return _processQueue.size();}
-        void addWork(WorkType& work);
-        void start();
-        void stop();
+        LogManager(Server& server) : Manager<WorkType>(server) {
+            this->setUpDatabaseConnection();
+        }
+        void handleClient() override;
 };
 
 #endif

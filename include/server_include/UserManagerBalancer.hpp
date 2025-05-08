@@ -4,10 +4,12 @@
 #include "server_include/LoadBalancer.hpp"
 #include "shared_include/Message.hpp"
 
-class UserManagerBalancer : public LoadBalancer<Message, UserManager<Message>>{
+template<typename WorkType>
+class UserManagerBalancer : public LoadBalancer<WorkType>{
+    private:
+        virtual std::shared_ptr<Manager<WorkType>> createManager(Server& server) override;
     public:
-        UserManagerBalancer(const int workerAmount)
-            : LoadBalancer<Message, UserManager<Message>>(workerAmount) {}
+        using LoadBalancer<WorkType>::LoadBalancer;
 };
 
 #endif

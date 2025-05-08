@@ -50,6 +50,8 @@ if(UNIX)
 endif()
 
 #Recursively build other projects
+add_subdirectory(client)
+add_subdirectory(server)
 add_subdirectory(demo_client)
 add_subdirectory(demo_server)
 add_subdirectory(tests)

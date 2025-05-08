@@ -11,7 +11,7 @@ Message::Message(MessageBuilder* messageBuilder)
         _messageType(messageBuilder->getMessageType()) {}
 
 
-void Message::serializeInt(std::vector<char>& buffer, int val){
+void Message::serializeInt(std::vector<char>& buffer, int val) {
     char* p = reinterpret_cast<char*>(&val);
     buffer.insert(buffer.end(), p, p + sizeof(int));
 }
@@ -22,7 +22,7 @@ int  Message::deserializeInt(const std::vector<char>& buffer, size_t& offset){
     return val;
 }
 
-void  Message::serializeString(std::vector<char>& buffer, const std::string& str){
+void Message::serializeString(std::vector<char>& buffer, const std::string& str) {
     serializeInt(buffer, static_cast<int>(str.length()));
     buffer.insert(buffer.end(), str.begin(), str.end());
 }
@@ -34,7 +34,7 @@ std::string  Message::deserializeString(const std::vector<char>& buffer, size_t&
     return result;
 }
 
-std::vector<char> Message::serialize(){
+std::vector<char> Message::serialize() const{
     std::vector<char> buffer, content;
 
     serializeInt(content, static_cast<int>(_messageType));
@@ -56,22 +56,21 @@ Message Message::deserialize(const std::vector<char>& data){
     Message message;
     size_t offset = 0;
 
-    message._messageType = static_cast<MessageType>(message.deserializeInt(data, offset));
-    message._from_user_id = message.deserializeInt(data, offset);
-    message._to_user_id = message.deserializeInt(data, offset);
-    message._from_chatroom_id = message.deserializeInt(data, offset);
-    message._to_chatroom_id = message.deserializeInt(data, offset);
+    message._messageType = static_cast<MessageType>(deserializeInt(data, offset));
+    message._from_user_id = deserializeInt(data, offset);
+    message._to_user_id = deserializeInt(data, offset);
+    message._from_chatroom_id = deserializeInt(data, offset);
+    message._to_chatroom_id = deserializeInt(data, offset);
 
-    message._from_user_name = message.deserializeString(data, offset);
-    message._to_user_name = message.deserializeString(data, offset);
-    message._messageContents = message.deserializeString(data, offset);
-
+    message._from_user_name = deserializeString(data, offset);
+    message._to_user_name = deserializeString(data, offset);
+    message._messageContents = deserializeString(data, offset);
 
     return message;
 }
 
-std::string Message::messageTypeToString(){
-    switch(_messageType){
+std::string Message::messageTypeToString(const MessageType& messageType){
+    switch(messageType){
         case MessageType::SEND:
             return "SEND";
         case MessageType::RECV:
@@ -85,5 +84,5 @@ std::string Message::messageTypeToString(){
 }
 
 void Message::printMessage(){
-    std::cout << "Message Type: " << messageTypeToString() << " Contents: " << _messageContents << std::endl;
+    std::cout << "Message Type: " << messageTypeToString(_messageType) << " Contents: " << _messageContents << std::endl;
 }

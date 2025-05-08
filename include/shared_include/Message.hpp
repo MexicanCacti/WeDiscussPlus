@@ -22,10 +22,10 @@ class Message{
         //Atomic-safe hashmap of ChatroomID: ChatroomObject
         //Atomic-safe hashmap of UserID : UserName
 
-        void serializeInt(std::vector<char>& buffer, int val);
-        int deserializeInt(const std::vector<char>& buffer, size_t& offset);
-        void serializeString(std::vector<char>& buffer, const std::string& str);
-        std::string deserializeString(const std::vector<char>& buffer, size_t& offset);
+        static void serializeInt(std::vector<char>& buffer, int val);
+        static int deserializeInt(const std::vector<char>& buffer, size_t& offset);
+        static void serializeString(std::vector<char>& buffer, const std::string& str);
+        static std::string deserializeString(const std::vector<char>& buffer, size_t& offset);
     public:
         Message() : _messageContents(""), _to_user_name(""), _to_user_id(-1), _from_user_name(""), _from_user_id(-1), _to_chatroom_id(-1), _from_chatroom_id(-1), _messageType(MessageType::UNDEFINED) {};
 
@@ -47,11 +47,11 @@ class Message{
 
         inline MessageType getMessageType() const {return _messageType;}
 
-        std::vector<char> serialize();
+        std::vector<char> serialize() const;
 
         static Message deserialize(const std::vector<char>& data);
 
-        std::string messageTypeToString();
+        static std::string messageTypeToString(const MessageType& messageType);
         
         void printMessage();
 };

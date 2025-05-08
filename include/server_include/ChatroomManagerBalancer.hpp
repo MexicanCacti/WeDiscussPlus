@@ -4,10 +4,12 @@
 #include "server_include/LoadBalancer.hpp"
 #include "shared_include/Message.hpp"
 
-class ChatroomManagerBalancer : public LoadBalancer<Message, ChatroomManager<Message>>{
+template<typename WorkType>
+class ChatroomManagerBalancer : public LoadBalancer<WorkType>{
+    private:
+        virtual std::shared_ptr<Manager<WorkType>> createManager(Server& server) override;
     public:
-        ChatroomManagerBalancer(const int workerAmount)
-                : LoadBalancer<Message, ChatroomManager<Message>>(workerAmount) {}
+        using LoadBalancer<WorkType>::LoadBalancer;
 };
 
 #endif

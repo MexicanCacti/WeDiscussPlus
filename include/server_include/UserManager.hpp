@@ -1,43 +1,32 @@
 #ifndef USERMANAGER_HPP
 #define USERMANAGER_HPP
 
-#include <unordered_map>
-#include <string>
-#include <queue>
-#include <atomic>
-#include <mutex>
-#include "server_include/Server.hpp"
+#include "server_include/Manager.hpp"
+#include "shared_include/Message.hpp"
 #include "shared_include/User.hpp"
 
+// Forward Declaration to avoid circular dependency
+class Server;
+
 template<typename WorkType>
-class UserManager{
+class UserManager : public Manager<WorkType> {
     private:
-        std::atomic<bool> _shouldDoWork = true;
-        //std::weak_ptr<Server> _serverPointer = nullptr; //B/c weak_ptr ... remmeber to call lock() before to check if exists by getting shared_ptr
+        static std::unordered_map<int, User> _userMap; // Cache of userID : User object
+        static std::unordered_map<int, std::string> _userIDToName; // Cache of userID : username
+        static std::unordered_map<std::string, int> _usernameToID; // Cache of username : userID
 
-        // static std::unordered_map<int, User> _userMap;
-
-        // static std::unordered_map<int, std::string> _userIDToName;
-
-        // static std::unordered_map<std::string, int> _usernameToID;
-
-        std::queue<WorkType> _processQueue;
-        std::mutex _processQueueMutex;
-    public:
-        UserManager();
-        void start();
-        inline void stop() {_shouldDoWork = false;}
-        void checkForWork();
-        void addWork(WorkType& work);
         void authUser(WorkType* work);
         void logoutUser(WorkType* work);
         void addUser(WorkType* work);
         void changeUserPassword(WorkType* work);
         void changeUserName(WorkType* work);
         void deleteUser(WorkType* work);
-        int getQueueSize() const {return _processQueue.size();}
-        // SendMessage
-        // Some Functions to get Users & info from database!
+        void sendMessageToUser(WorkType* work);
+
+        void setUpDatabaseConnection() override;
+    public:
+        UserManager(Server& server) : Manager<WorkType>(server) {this->setUpDatabaseConnection();}
+        void handleClient() override;
 };
 
 #endif

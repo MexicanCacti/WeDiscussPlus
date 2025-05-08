@@ -4,69 +4,55 @@
 #include <atomic>
 #include <thread>
 #include <iostream>
-#include "server_include/UserManagerBalancer.hpp"
+#include <asio.hpp>
+
+#include "shared_include/Message.hpp"
+#include "server_include/LoadBalancer.hpp"
 #include "server_include/ChatroomManagerBalancer.hpp"
+#include "server_include/UserManagerBalancer.hpp"
 #include "server_include/LogManagerBalancer.hpp"
-#include "Message.hpp"
+
+using asio::ip::tcp;
 
 class Server {
+    const int _MAX_LOG_MANAGERS = 2;
+    const int _MAX_USER_MANAGERS = 2;
+    const int _MAX_CHATROOM_MANAGERS = 2;
+
+    std::unique_ptr<ChatroomManagerBalancer<Message>> _chatroomManagerBalancer = nullptr;
+    std::unique_ptr<UserManagerBalancer<Message>> _userManagerBalancer = nullptr;
+    std::unique_ptr<LogManagerBalancer<Message>> _logManagerBalancer = nullptr;
+
     private:
-        const int _numUserManagers = 2;
-        const int _numChatroomManagers = 2;
-        const int _numLogManagers = 2;
-        std::atomic<bool> _isRunning = true;
+        struct ClientSockets{
+            std::shared_ptr<tcp::socket> fromSocket;
+            std::shared_ptr<tcp::socket> toSocket;
+        };
+
         int _port;
-        std::string _serverIP;
-        // MAP TO USERID: SOCKET ... Need to create!
-        std::unique_ptr<UserManagerBalancer> _userManagerBalancer;
-        std::unique_ptr<ChatroomManagerBalancer> _chatroomManagerBalancer;
-        //std::unique_ptr<LogManagerBalancer> _logManagerBalancer = std::make_unique<LogManagerBalancer>(_numLogManagers, std::weak_ptr<Server>(shared_from_this()));
+        std::string _serverIP = "";
+        bool _isRunning = true;
+        asio::io_context _ioContext;
+        tcp::acceptor _connectionAcceptor;
 
-        std::unordered_map<int, std::thread> userManagerThreads;
-        std::unordered_map<int, std::thread> chatroomManagerThreads;
-        //std::unordered_map<int, std::thread> logManagerThreads;
+        // Map | ClientID : To&From Sockets
+        std::unordered_map<int, ClientSockets> _clientSocketMap;
+        std::mutex _clientSocketMapMutex;
 
-    private:
-        void initBalancers(){
-            _userManagerBalancer = std::make_unique<UserManagerBalancer>(_numUserManagers);
-            _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer>(_numChatroomManagers);
-        }
+        void listenForConnections();
+        void handleClient(int clientID);
+        void registerClient(std::shared_ptr<tcp::socket> clientSocket);
+        void registerToClientSocket(int clientID,std::shared_ptr<tcp::socket> clientSocket);
+        void registerFromClientSocket(std::shared_ptr<tcp::socket> clientSocket);
+        Message readMessageFromSocket(std::shared_ptr<tcp::socket> socket);
+        void sendMessageToSocket(std::shared_ptr<tcp::socket> socket, Message& message);
+        void shutdown();
     public:
-        void run(int port){
-            startServer(port);
-            for(int i = 0 ; i < 3; ++i){
-                std::this_thread::sleep_for(std::chrono::seconds(2));
-            }
-            stopServer();
-        }
-        void startServer(int port){
-            initBalancers();
-            std::thread(listenForConnections);
-            std::cout << "Server Started\n";
-        }
-
-        void stopServer(){
-            _isRunning = false;
-            std::cout << "Server Stopped!\n";
-        }
-
-        bool IsRunning() const {return _isRunning;}
-
-        void addMessageToUserBalancer(Message& message);
-        void addMessageToChatroomBalancer(Message& message);
-
-        // Open Socket, temporarily store w/ userID = -1
-        // Then handleLoginRequest, which sends the socket & the Message received to the UserManagerBalancer
-        // UserManagerBalancer then handles authentication... Need a way to signal back to server that the user was successfully logged in
-        // Once successfuly signal sent, then needs to send a signal to every relevant worker thread that to update cached value (if it has) of that user/chatroom
-        // Then a new thread is created running processResponse() for that socket
-        void listenForConnections() {while(_isRunning){};}
-
-        void startChatroomManagers(int);
-        void startLogManagers(int);
-        void startUserManagers(int);
-        void handleLoginRequest();
-        void processResponse(); // PUT IN A TRY CATCH
+        Server(int port);
+        ~Server() {shutdown();}
+        void startServer();
+        void stopServer();
+        void addMessageToLogBalancer(Message& message);
 };
 
 #endif

@@ -92,6 +92,7 @@
         "ranges": "cpp",
         "source_location": "cpp",
         "stack": "cpp",
-        "strstream": "cpp"
+        "strstream": "cpp",
+        "*.ipp": "cpp"
     }
 }

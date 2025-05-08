@@ -1,9 +1,11 @@
+#ifndef USER_HPP
+#define USER_HPP
+
 #include <string>
 #include <vector>
 #include <unordered_set>
 #include "shared_include/Message.hpp"
-#ifndef USER_HPP
-#define USER_HPP
+
 class User{
     private:
         static int _userIDCounter;
