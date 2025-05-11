@@ -35,7 +35,7 @@ class RoutingTest : public ::testing::Test {
 protected:
     void SetUp() override {
         try {
-            _server = std::make_unique<Server<MockMessage>>(3333);
+            _server = std::make_unique<Server<MockMessage>>("127.0.0.1", 3333);
             
             std::promise<void> serverStarted;
             std::future<void> serverStartedFuture = serverStarted.get_future();

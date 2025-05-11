@@ -5,6 +5,9 @@
 #include <thread>
 #include <iostream>
 #include <asio.hpp>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
 
 #include "Message.hpp"
 #include "LoadBalancer.hpp"
@@ -16,39 +19,37 @@ using asio::ip::tcp;
 
 template<typename WorkType>
 class Server {
-    int _MAX_LOG_MANAGERS = 2;
-    int _MAX_USER_MANAGERS = 2;
-    int _MAX_CHATROOM_MANAGERS = 2;
-
-    protected:
-        std::unique_ptr<ChatroomManagerBalancer<WorkType>> _chatroomManagerBalancer = nullptr;
-        std::unique_ptr<UserManagerBalancer<WorkType>> _userManagerBalancer = nullptr;
-        std::unique_ptr<LogManagerBalancer<WorkType>> _logManagerBalancer = nullptr;
-        
-        struct ClientSockets{
+    private:
+        struct ClientSockets {
             std::shared_ptr<tcp::socket> fromSocket;
             std::shared_ptr<tcp::socket> toSocket;
         };
-        // Map | ClientID : To&From Sockets
-        std::unordered_map<int, ClientSockets> _clientSocketMap;
-        std::mutex _clientSocketMapMutex;
-        asio::io_context _ioContext;
 
-    private:
         int _port;
-        std::string _serverIP = "";
+        bool _isRunning = false;
+        asio::io_context _ioContext;
         tcp::acceptor _connectionAcceptor;
-        bool _isRunning = true;
+        std::mutex _clientSocketMapMutex;
+        std::unordered_map<int, ClientSockets> _clientSocketMap;
+
+        std::unique_ptr<ChatroomManagerBalancer<WorkType>> _chatroomManagerBalancer;
+        std::unique_ptr<UserManagerBalancer<WorkType>> _userManagerBalancer;
+        std::unique_ptr<LogManagerBalancer<WorkType>> _logManagerBalancer;
+
+        int _MAX_CHATROOM_MANAGERS = 2;
+        int _MAX_USER_MANAGERS = 2;
+        int _MAX_LOG_MANAGERS = 2;
 
         void listenForConnections();
-        void handleClient(int clientID);
         void registerClient(std::shared_ptr<tcp::socket> clientSocket);
-        void registerToClientSocket(int clientID,std::shared_ptr<tcp::socket> clientSocket);
+        void registerToClientSocket(int clientID, std::shared_ptr<tcp::socket> clientSocket);
+        void handleClient(int clientID);
         WorkType readMessageFromSocket(std::shared_ptr<tcp::socket> socket);
         void sendMessageToSocket(std::shared_ptr<tcp::socket> socket, WorkType& message);
         void shutdown();
+
     public:
-        Server(int port);
+        Server(const std::string& ip, int port);
         ~Server() {shutdown();}
         inline void setMaxChatroomManagers(int maxChatroomManagers) {_MAX_CHATROOM_MANAGERS = maxChatroomManagers;}
         inline void setMaxUserManagers(int maxUserManagers) {_MAX_USER_MANAGERS = maxUserManagers;}

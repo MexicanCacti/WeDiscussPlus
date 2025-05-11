@@ -4,7 +4,7 @@
 #include "MockMessage.hpp"
 class TestingServer : public Server<MockMessage> {
     public:
-        TestingServer(int port) : Server<MockMessage>(port) {}
+        TestingServer(int port) : Server<MockMessage>("127.0.0.1", port) {}
 };
 
 #endif

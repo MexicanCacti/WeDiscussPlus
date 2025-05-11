@@ -4,7 +4,7 @@
 #include <asio.hpp>
 #include <string>
 #include <vector>
-#include "shared_include/Message.hpp"
+#include "Message.hpp"
 
 using asio::ip::tcp;
 

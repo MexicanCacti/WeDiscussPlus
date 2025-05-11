@@ -1,7 +1,10 @@
 #include "Server.hpp"
 
 template<typename WorkType>
-Server<WorkType>::Server(int port) : _port(port), _ioContext(), _connectionAcceptor(_ioContext, tcp::endpoint(tcp::v4(), port)) {}
+Server<WorkType>::Server(const std::string& ip, int port) 
+    : _port(port), 
+      _ioContext(),
+      _connectionAcceptor(_ioContext, tcp::endpoint(asio::ip::make_address(ip), port)) {}
 
 template<typename WorkType>
 void Server<WorkType>::startServer(){
@@ -32,7 +35,6 @@ void Server<WorkType>::startServer(){
         std::cout << "Server: Log managers initialized" << std::endl;
         #endif
 
-        // Start manager threads
         std::thread([this]() {
             try {
                 _chatroomManagerBalancer->waitForWork();
@@ -112,7 +114,9 @@ void Server<WorkType>::listenForConnections(){
     try {
         tcp::endpoint localEndpoint = _connectionAcceptor.local_endpoint();
         #ifdef _DEBUG
-        std::cout << "Server: Listening on " << localEndpoint.address().to_string() << ":" << localEndpoint.port() << std::endl;
+        std::cout << "Server: Listening on IP: " << localEndpoint.address().to_string() 
+                  << " (" << (localEndpoint.address().is_v4() ? "IPv4" : "IPv6") << ")"
+                  << " Port: " << localEndpoint.port() << std::endl;
         #endif
         _isRunning = true;
 

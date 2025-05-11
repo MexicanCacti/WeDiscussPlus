@@ -5,22 +5,40 @@
 #include "Message.hpp"
 #include "Server.hpp"
 
-static const int defaultPort = 13400;
+static const int defaultPort = 3333;
+static const std::string defaultIP = "127.0.0.1";
 
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[]) {
     int port = defaultPort;
+    std::string ip = defaultIP;
+
     #ifndef NDEBUG
-        std::cout << "Enter Port Number to Host on: ";
-        std::cin >> port;
-        if(std::cin.fail() || port <= 0 || port > 65535){
-            std::cerr << "Invalid Input! Using Default Port: " << defaultPort << std::endl;
-            port = defaultPort;
+        std::cout << "Enter IP address to bind to | Default:[" << defaultIP << "]: ";
+        std::string inputIP;
+        std::getline(std::cin, inputIP);
+        if (!inputIP.empty()) {
+            ip = inputIP;
         }
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        std::cout << "Enter Port Number to Host on | Default: [" << defaultPort << "]: ";
+        std::string inputPort;
+        std::getline(std::cin, inputPort);
+        if (!inputPort.empty()) {
+            try {
+                port = std::stoi(inputPort);
+                if (port <= 0 || port > 65535) {
+                    std::cerr << "Invalid port number! Using default port: " << defaultPort << std::endl;
+                    port = defaultPort;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Invalid input! Using default port: " << defaultPort << std::endl;
+                port = defaultPort;
+            }
+        }
     #endif
 
-    std::cout << "Starting server on port " << port << "..." << std::endl;
-    auto server = Server<Message>(port);
+    std::cout << "Starting server on " << ip << ":" << port << "..." << std::endl;
+    auto server = Server<Message>(ip, port);
     
     std::thread serverThread([&server]() {
         try {
@@ -36,7 +54,6 @@ int main(int argc, char* argv[]){
     std::cout << "Stopping server..." << std::endl;
     server.stopServer();
     
-
     if (serverThread.joinable()) {
         serverThread.join();
     }
