@@ -5,6 +5,7 @@
 class Message;
 
 #include "shared_include/MessageType.hpp"
+#include "shared_include/MessageInterface.hpp"
 #include <string>
 
 class MessageBuilder {
@@ -19,8 +20,8 @@ class MessageBuilder {
         MessageType _messageType;
 
     public:
-        MessageBuilder() = default;
-        MessageBuilder(Message* message);
+        MessageBuilder() : _messageContents(""), _to_user_name(""), _to_user_id(-1), _from_user_name(""), _from_user_id(-1), _to_chatroom_id(-1), _from_chatroom_id(-1), _messageType(MessageType::UNDEFINED) {}
+        MessageBuilder(MessageInterface* message);
 
         inline void setMessageContents(const std::string& messageContents) {_messageContents = messageContents;}
         inline const std::string& getMessageContents() const {return _messageContents;}
@@ -46,7 +47,7 @@ class MessageBuilder {
         inline void setMessageType(MessageType messageType) {_messageType = messageType;}
         inline MessageType getMessageType() const {return _messageType;}   
 
-        Message buildMessage();
+        MessageInterface* buildMessage();
 };
 
 #endif

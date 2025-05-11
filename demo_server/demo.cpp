@@ -118,7 +118,7 @@ class ServerTest{
                 std::cout << "Starting client handler thread...\n";
 
                 // Send SYSTEM ACK
-                MessageBuilder ackBuilder;
+                MessageBuilder<Message> ackBuilder;
                 ackBuilder.setMessageType(MessageType::ACK);
                 ackBuilder.setFromUserID(-1);
                 ackBuilder.setToUserID(clientID);
@@ -132,7 +132,7 @@ class ServerTest{
                     std::cout << "Received from client " << clientID << ": ";
                     message.printMessage();
                     
-                    MessageBuilder messageBuilder(&message);
+                    MessageBuilder<Message> messageBuilder(&message);
                     messageBuilder.setMessageContents("I GOT YOUR MESSAGE!");
                     messageBuilder.setToUserID(clientID);
                     message = Message(&messageBuilder);

@@ -15,83 +15,118 @@ void UserManager<WorkType>::setUpDatabaseConnection() {
     // Set up connection to database & set up maps!
 }
 
-// Notes this->_processQueue is needed for proper name lookup from compiler!
+
 template<typename WorkType>
-void UserManager<WorkType>::handleClient(){
-    try{
-        while(this->_shouldDoWork){
-            this->_processQueueMutex.lock();
-            if(this->_processQueue.empty()){
-                this->_processQueueMutex.unlock();
-                std::this_thread::sleep_for(2s);
-                continue;
-            }
-    
-            WorkType workToDo = std::move(this->_processQueue.front());
-            this->_processQueueMutex.unlock();
-            this->_processQueue.pop();
-    
-            // Go Ahead & Look at the Work Type ID to figure out what it should be doing!. Then Socket should be in WorkType to set back data to client if needed
-            // EX: For AUTH USER:
-            // authUser(work)
-        }      
+void UserManager<WorkType>::processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) {
+    #ifdef _DEBUG
+    std::cout << "UserManager processing message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
+    #endif
+            
+    switch(work.first.getMessageType()){
+        case MessageType::SEND:
+            authUser(work);
+            break;
+        case MessageType::LOGOUT:
+            logoutUser(work);
+            break;
+        case MessageType::ADD_USER:
+            addUser(work);
+            break;
+        case MessageType::CHANGE_USER_PASSWORD:
+            changeUserPassword(work);
+            break;
+        case MessageType::CHANGE_USER_NAME:
+            changeUserName(work);
+            break;
+        case MessageType::DELETE_USER:
+            deleteUser(work);
+            break;
+        case MessageType::SEND_MESSAGE_TO_USER:
+            sendMessageToUser(work);
+            break;
+        default:
+            #ifdef _DEBUG
+            std::cout << "Unknown message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
+            #endif
+            break;
     }
-    catch(const std::exception& e){
-        std::cerr << "Thread Exception: " << e.what() << std::endl;
-    }
+}      
+
+template<typename WorkType>
+void UserManager<WorkType>::authUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+    std::cout << "UserManager: AUTH_USER called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+    work.first.setMessageContents("authUser");
+    asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::authUser(WorkType* work){
-    // Then dereference work pointer to get username & password & socket to send confirmation to
-    // Also Update the DB! -> For online status?
-    // Send Message using Server's sendMessageToSocket function!
-    // Message should also contain a mapping of all online username & userID!
+void UserManager<WorkType>::logoutUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+    std::cout << "UserManager: LOGOUT called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+    work.first.setMessageContents("logoutUser");
+    asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::logoutUser(WorkType* work){
-    // Dereference work pointer to get username & userID... remove references from map
-    // Also Update the DB! -> For online status?
-    // Send Message using Server's sendMessageToSocket function!
+void UserManager<WorkType>::addUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+    std::cout << "UserManager: ADD_USER called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+    work.first.setMessageContents("addUser");
+    asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::addUser(WorkType* work){
-    // Dereference work pointer to get userID & userName & socket to send confirmation to
-    // Also Update the DB!
-    // Send Message using Server's sendMessageToSocket function!
+void UserManager<WorkType>::changeUserPassword(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+    std::cout << "UserManager: CHANGE_USER_PASSWORD called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+    work.first.setMessageContents("changeUserPassword");
+    asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::changeUserPassword(WorkType* work){
-    // Dereference work pointer to get userID and password to change User object contained in map
-    // If not in map, look in DB & add to map!
-    // Also update the DB!
-    // Send Message using Server's sendMessageToSocket function!
+void UserManager<WorkType>::changeUserName(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+    std::cout << "UserManager: CHANGE_USER_NAME called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+    work.first.setMessageContents("changeUserName");
+    asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::changeUserName(WorkType* work){
-    // Dereference work pointer to get userID and password to change User object contained in map, Also change Maps w/ new userName, delete old & replace with new!
-    // If not in map, look in DB & add to map!
-    // Also update the DB!
-    // Send Message using Server's sendMessageToSocket function!
-}
-
-
-template<typename WorkType>
-void UserManager<WorkType>::deleteUser(WorkType* work){
-    // Dereference work pointer to get userID and userName to delete references in maps
-    // Also update the DB!
-    // Send Message using Server's sendMessageToSocket function!
+void UserManager<WorkType>::deleteUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+    std::cout << "UserManager: DELETE_USER called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+    work.first.setMessageContents("deleteUser");
+    asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::sendMessageToUser(WorkType* work){
-    // Dereference work pointer to get userID and userName to send message to
-    // Send Message using Server's sendMessageToSocket function!
-    // Server should have a function to add message to the logBalancer's work queue!
+void UserManager<WorkType>::sendMessageToUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+    std::cout << "UserManager: SEND_MESSAGE_TO_USER called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+    work.first.setMessageContents("sendMessageToUser");
+    asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template class UserManager<Message>;

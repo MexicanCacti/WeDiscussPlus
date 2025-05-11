@@ -2,6 +2,8 @@
 #define LOADBALANCER_HPP
 
 #include <chrono>
+#include <asio.hpp>
+using asio::ip::tcp;
 using namespace std::chrono_literals;
 
 #include "server_include/Manager.hpp"
@@ -14,21 +16,21 @@ class LoadBalancer{
         std::thread _balancerThread;
         std::unordered_map<int, std::shared_ptr<Manager<WorkType>>> _managers;
         std::unordered_map<int, std::thread> _managerThreads;
-        std::queue<WorkType> _workQueue;
+        std::queue<std::pair<WorkType, std::shared_ptr<tcp::socket>>> _workQueue;
         std::mutex _workQueueMutex;
-        bool _isRunning = true;
+        bool _isRunning = false;
         inline static int _managerID= 0;
 
         LoadBalancer() = default;
 
         virtual std::shared_ptr<Manager<WorkType>> createManager(Server& server) = 0;
-        void findBestManager(WorkType& work);
-        void assignWork(int managerID, WorkType& work);
-        void waitForWork();
-
+        void findBestManager(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void assignWork(int managerID, std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
     public:
+        void waitForWork();
         void initManagers(const int managerAmount, Server& server);
-        void pushWork(WorkType& work);
+        void addManager(int id, std::shared_ptr<Manager<WorkType>> manager);
+        void pushWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>&& work);
         inline std::unordered_map<int, std::shared_ptr<Manager<WorkType>>> getManagers() const {return _managers;};
         void stopAllThreads();
         ~LoadBalancer();

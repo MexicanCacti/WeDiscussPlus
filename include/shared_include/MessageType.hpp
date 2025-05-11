@@ -1,25 +1,22 @@
 #pragma once
 
 enum class MessageType{
-    LOGIN,
-    LOGOUT,
-    ADD_USER,
-    DELETE_USER,
-    INFORM_USER_DELETION,
-    CHANGE_PASSWORD,
-    GET_USER_LOG,
-    GET_CHATROOM_LOG,
-    CREATE_CHATROOM,
-    INVITE_USER_TO_CHATROOM,
-    JOIN_CHATROOM,
-    LEAVE_CHATROOM,
-    USER_TO_USER_MESSAGE,
-    USER_TO_CHATROOM_MESSAGE,
-    UPDATE_USER_MAP,
-    UPDATE_CHATROOM_MAP,
+    LOGOUT, // UserManager->logoutUser
+    ADD_USER, // UserManager->addUser
+    CHANGE_USER_PASSWORD, // UserManager->changeUserPassword
+    CHANGE_USER_NAME, // UserManager->changeUserName
+    DELETE_USER, // UserManager->deleteUser
+    SEND_MESSAGE_TO_USER, // UserManager->sendMessageToUser
+    CREATE_CHATROOM, // ChatroomManager->createChatroom
+    DELETE_CHATROOM, // ChatroomManager->deleteChatroom
+    ADD_USER_TO_CHATROOM, // ChatroomManager->addUserToChatroom
+    SEND_MESSAGE_TO_CHATROOM, // ChatroomManager->sendMessageToChatroom
+    REMOVE_USER_FROM_CHATROOM, // ChatroomManager->removeUserFromChatroom
+    GET_USER_MESSAGES, // LogManager->answerLogRequest
+    GET_CHATROOM_MESSAGES, // LogManager->answerLogRequest
+    SEND, // UserManager -> authUser
+    RECV, // Server->registerToClientSocket
+    ACK, // Server sends to client after Server->handleClient called
     UNDEFINED,
-    TEST,
-    SEND,
-    RECV,
-    ACK
+    TEST
 };

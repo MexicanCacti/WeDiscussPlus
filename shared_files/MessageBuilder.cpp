@@ -1,7 +1,7 @@
 #include "shared_include/MessageBuilder.hpp"
-#include "shared_include/Message.hpp"
+#include "shared_include/MessageInterface.hpp"
 
-MessageBuilder::MessageBuilder(Message* message)
+MessageBuilder::MessageBuilder(MessageInterface* message)
     :   _messageContents(message->getMessageContents()),
         _to_user_name(message->getToUsername()),
         _to_user_id(message->getToUserID()),
@@ -11,6 +11,6 @@ MessageBuilder::MessageBuilder(Message* message)
         _from_chatroom_id(message->getFromChatroomID()),
         _messageType(message->getMessageType()) {}
 
-Message MessageBuilder::buildMessage(){
-    return Message(this);
+MessageInterface* MessageBuilder::buildMessage(){
+    return *MessageInterface(this);
 }

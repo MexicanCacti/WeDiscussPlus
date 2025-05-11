@@ -8,48 +8,66 @@ void LogManager<WorkType>::setUpDatabaseConnection(){
     // Set up connection to database & set up maps!
 }
 
-// Notes this->_processQueue is needed for proper name lookup from compiler!
 template<typename WorkType>
-void LogManager<WorkType>::handleClient(){
-    try{
-        while(this->_shouldDoWork){
-            this->_processQueueMutex.lock();
-            if(this->_processQueue.empty()){
-                this->_processQueueMutex.unlock();
-                std::this_thread::sleep_for(2s);
-                continue;
-            }
-
-            WorkType workToDo = std::move(this->_processQueue.front());
-            this->_processQueue.pop();        
-            this->_processQueueMutex.unlock();
-
-            answerLogRequest(workToDo);
-        }
+void LogManager<WorkType>::processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) {
+    #ifdef _DEBUG
+    std::cout << "LogManager processing message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
+    #endif
+            
+    switch(work.first.getMessageType()){
+        case MessageType::GET_USER_MESSAGES:
+        case MessageType::GET_CHATROOM_MESSAGES:
+            answerLogRequest(work);
+            break;
+        default:
+            #ifdef _DEBUG
+            std::cout << "Unknown message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
+            #endif
+            break;
     }
-    catch(const std::exception& e){
-        std::cerr << "Thread Exception: " << e.what() << std::endl;
-    }
-}
+}   
 
 template<typename WorkType>
 void LogManager<WorkType>::getUserMessages(int userID) {
-    // Implementation
+    #ifdef _DEBUG
+        std::cout << "LogManager: GET_USER_MESSAGES called for userID: " << userID << std::endl;
+    #endif
 }
 
 template<typename WorkType>
 void LogManager<WorkType>::getChatroomMessages(int chatroomID) {
-    // Implementation
+    #ifdef _DEBUG
+        std::cout << "LogManager: GET_CHATROOM_MESSAGES called for chatroomID: " << chatroomID << std::endl;
+    #endif
 }
 
 template<typename WorkType>
-void LogManager<WorkType>::answerLogRequest(WorkType& message) {
-    // Implementation
+void LogManager<WorkType>::answerLogRequest(std::pair<WorkType, std::shared_ptr<tcp::socket>>& message) {
+    switch(message.first.getMessageType()){
+        case MessageType::GET_USER_MESSAGES:
+            getUserMessages(message.first.getToUserID());
+            #ifdef _ROUTE_TESTING
+                message.first.setMessageContents("getUserMessages");
+                asio::write(*message.second, asio::buffer(message.first.serialize()));
+            #endif
+            break;
+        case MessageType::GET_CHATROOM_MESSAGES:
+            getChatroomMessages(message.first.getToChatroomID());
+            #ifdef _ROUTE_TESTING
+                message.first.setMessageContents("getChatroomMessages");
+                asio::write(*message.second, asio::buffer(message.first.serialize()));
+            #endif
+            break;
+        default:
+            break;
+    }
 }
 
 template<typename WorkType>
 void LogManager<WorkType>::storeMessage(WorkType& message) {
-    // Implementation
+    #ifdef _DEBUG
+        std::cout << "LogManager: storeMessage called" << std::endl;
+    #endif
 }
 
 template class LogManager<Message>;

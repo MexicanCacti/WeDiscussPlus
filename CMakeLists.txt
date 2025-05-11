@@ -34,6 +34,7 @@ add_library(core STATIC ${INCLUDE_SOURCES})
 add_library(asio INTERFACE)
 
 target_compile_definitions(asio INTERFACE ASIO_STANDALONE)
+target_compile_definitions(core PRIVATE _DEBUG)
 target_include_directories(asio INTERFACE ${CMAKE_SOURCE_DIR}/libs/asio-1.30.2/include)
 
 target_include_directories(core PUBLIC 

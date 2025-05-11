@@ -32,7 +32,7 @@ void listenForMessages(tcp::socket& recvSocket) {
 void sendMessages(tcp::socket& sendSocket, int clientID) {
     // Send a test message
     int messageNumber = 0;
-    MessageBuilder testBuilder;
+    MessageBuilder<Message> testBuilder;
     testBuilder.setMessageType(MessageType::UNDEFINED);
     testBuilder.setFromUserID(clientID);
     testBuilder.setToUserID(clientID);
@@ -58,7 +58,7 @@ int main() {
     tcp::socket sendSocket(context); // client sends messages to the server with this socket TO SERVER
     asio::connect(sendSocket, endpoints);
 
-    MessageBuilder sendBuilder;
+    MessageBuilder<Message> sendBuilder;
     sendBuilder.setMessageType(MessageType::SEND);
     sendBuilder.setMessageContents("I sent a SEND message!");
     sendBuilder.setFromUserID(clientID);
@@ -71,7 +71,7 @@ int main() {
     tcp::socket recvSocket(context);
     asio::connect(recvSocket, endpoints);
 
-    MessageBuilder recvBuilder; // server sends messages to this socket TO CLIENT
+    MessageBuilder<Message> recvBuilder; // server sends messages to this socket TO CLIENT
     recvBuilder.setMessageType(MessageType::RECV);
     recvBuilder.setMessageContents("I sent a RECV message!");
     recvBuilder.setFromUserID(clientID);

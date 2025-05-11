@@ -4,9 +4,17 @@ set(SERVER_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/build/bin)
 
 message(STATUS "Building WeDiscussServer")
 
-add_executable(WeDiscussServer ${SERVER_FILES}) 
+add_library(server STATIC ${SERVER_FILES})
+target_link_libraries(server PRIVATE core asio)
+target_include_directories(server PUBLIC 
+    ${CMAKE_SOURCE_DIR}/include/client_include
+    ${CMAKE_SOURCE_DIR}/include/server_include
+    ${CMAKE_SOURCE_DIR}/include/shared_include
+    ${CMAKE_SOURCE_DIR}/libs/asio-1.30.2/include
+)
 
-target_link_libraries(WeDiscussServer PRIVATE core)
+add_executable(WeDiscussServer main.cpp)
+target_link_libraries(WeDiscussServer PRIVATE server)
 
 target_include_directories(WeDiscussServer PRIVATE ${SHARED_INCLUDE_HEADERS} ${SERVER_INCLUDE_HEADERS})
 

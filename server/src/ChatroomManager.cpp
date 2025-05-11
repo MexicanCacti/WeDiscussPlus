@@ -10,54 +10,89 @@ void ChatroomManager<WorkType>::setUpDatabaseConnection(){
     // Set up connection to database & set up maps!
 }
 
-// Notes this->_processQueue is needed for proper name lookup from compiler!
 template<typename WorkType>
-void ChatroomManager<WorkType>::handleClient(){
-    try{
-        while(this->_shouldDoWork){
-            this->_processQueueMutex.lock();
-            if(this->_processQueue.empty()){
-                this->_processQueueMutex.unlock();
-                std::this_thread::sleep_for(2s);
-                continue;
-            }
-    
-            WorkType workToDo = std::move(this->_processQueue.front());
-            this->_processQueueMutex.unlock();
-            this->_processQueue.pop();
-    
-            // Go Ahead & Look at the Work Type ID to figure out what it should be doing!. Then Socket should be in WorkType to send back data to client if needed
-
-        }      
+void ChatroomManager<WorkType>::processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) {
+    #ifdef _DEBUG
+    std::cout << "ChatroomManager processing message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
+    #endif
+            
+    switch(work.first.getMessageType()){
+        case MessageType::CREATE_CHATROOM:
+            createChatroom(work);
+            break;
+        case MessageType::DELETE_CHATROOM:
+            deleteChatroom(work);
+            break;
+        case MessageType::ADD_USER_TO_CHATROOM:
+            addUserToChatroom(work);
+            break;
+        case MessageType::SEND_MESSAGE_TO_CHATROOM:
+            sendMessageToChatroom(work);
+            break;
+        case MessageType::REMOVE_USER_FROM_CHATROOM:
+            removeUserFromChatroom(work);
+            break;
+        default:
+            #ifdef _DEBUG
+            std::cout << "Unknown message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
+            #endif
+            break;
     }
-    catch(const std::exception& e){
-        std::cerr << "Thread Exception: " << e.what() << std::endl;
-    }
+}   
+
+template<typename WorkType>
+void ChatroomManager<WorkType>::addUserToChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+        std::cout << "ChatroomManager: ADD_USER_TO_CHATROOM called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+        work.first.setMessageContents("addUserToChatroom");
+        asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void ChatroomManager<WorkType>::addUserToChatroom(WorkType* work){
-    
+void ChatroomManager<WorkType>::sendMessageToChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+        std::cout << "ChatroomManager: SEND_MESSAGE_TO_CHATROOM called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+        work.first.setMessageContents("sendMessageToChatroom");
+        asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void ChatroomManager<WorkType>::sendMessageToChatroom(WorkType* work){
-    
+void ChatroomManager<WorkType>::createChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+        std::cout << "ChatroomManager: CREATE_CHATROOM called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+        work.first.setMessageContents("createChatroom");
+        asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void ChatroomManager<WorkType>::createChatroom(WorkType* work){
-    
+void ChatroomManager<WorkType>::deleteChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+        std::cout << "ChatroomManager: DELETE_CHATROOM called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+        work.first.setMessageContents("deleteChatroom");
+        asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template<typename WorkType>
-void ChatroomManager<WorkType>::deleteChatroom(WorkType* work){
-    
-}
-
-template<typename WorkType>
-void ChatroomManager<WorkType>::removeUserFromChatroom(WorkType* work){
-    
+void ChatroomManager<WorkType>::removeUserFromChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+    #ifdef _DEBUG
+        std::cout << "ChatroomManager: REMOVE_USER_FROM_CHATROOM called" << std::endl;
+    #endif
+    #ifdef _ROUTE_TESTING
+        work.first.setMessageContents("removeUserFromChatroom");
+        asio::write(*work.second, asio::buffer(work.first.serialize()));
+    #endif
 }
 
 template class ChatroomManager<Message>;

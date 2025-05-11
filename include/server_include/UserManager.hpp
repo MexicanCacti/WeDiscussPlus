@@ -15,18 +15,17 @@ class UserManager : public Manager<WorkType> {
         static std::unordered_map<int, std::string> _userIDToName; // Cache of userID : username
         static std::unordered_map<std::string, int> _usernameToID; // Cache of username : userID
 
-        void authUser(WorkType* work);
-        void logoutUser(WorkType* work);
-        void addUser(WorkType* work);
-        void changeUserPassword(WorkType* work);
-        void changeUserName(WorkType* work);
-        void deleteUser(WorkType* work);
-        void sendMessageToUser(WorkType* work);
-
+        void authUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>&work);
+        void logoutUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void addUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void changeUserPassword(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void changeUserName(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void deleteUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void sendMessageToUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) override;
         void setUpDatabaseConnection() override;
     public:
         UserManager(Server& server) : Manager<WorkType>(server) {this->setUpDatabaseConnection();}
-        void handleClient() override;
 };
 
 #endif

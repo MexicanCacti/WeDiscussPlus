@@ -1,23 +1,26 @@
 #ifndef LOGMANAGER_HPP
 #define LOGMANAGER_HPP
-#include "server_include/Manager.hpp"
-#include "shared_include/Message.hpp"
+
+#include "server_include/Server.hpp"
+#include "shared_include/MessageInterface.hpp"
+#include <asio.hpp>
+#include <memory>
+
+using asio::ip::tcp;
 
 class Server;
 
-template<typename WorkType>
-class LogManager : public Manager<WorkType> {
+class LogManager {
     private:
         void getUserMessages(int userID);
         void getChatroomMessages(int chatroomID);
-        void answerLogRequest(WorkType& message);
-        void storeMessage(WorkType& message);
-        void setUpDatabaseConnection() override;
+        void answerLogRequest(std::pair<MessageInterface, std::shared_ptr<tcp::socket>>& message);
+
     public:
-        LogManager(Server& server) : Manager<WorkType>(server) {
-            this->setUpDatabaseConnection();
-        }
-        void handleClient() override;
+        void setUpDatabaseConnection();
+        void processWork(std::pair<MessageInterface, std::shared_ptr<tcp::socket>>& work);
+        void storeMessage(MessageInterface& message);
+        LogManager(Server& server) {this->setUpDatabaseConnection();}
 };
 
 #endif

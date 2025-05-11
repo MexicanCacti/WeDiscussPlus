@@ -56,6 +56,7 @@ Message Message::deserialize(const std::vector<char>& data){
     Message message;
     size_t offset = 0;
 
+    // Now read the actual message content
     message._messageType = static_cast<MessageType>(deserializeInt(data, offset));
     message._from_user_id = deserializeInt(data, offset);
     message._to_user_id = deserializeInt(data, offset);
@@ -71,18 +72,47 @@ Message Message::deserialize(const std::vector<char>& data){
 
 std::string Message::messageTypeToString(const MessageType& messageType){
     switch(messageType){
+        case MessageType::LOGOUT:
+            return "LOGOUT";
+        case MessageType::ADD_USER:
+            return "ADD_USER";
+        case MessageType::CHANGE_USER_PASSWORD:
+            return "CHANGE_USER_PASSWORD";
+        case MessageType::CHANGE_USER_NAME:
+            return "CHANGE_USER_NAME";
+        case MessageType::DELETE_USER:
+            return "DELETE_USER";
+        case MessageType::SEND_MESSAGE_TO_USER:
+            return "SEND_MESSAGE_TO_USER";
+        case MessageType::CREATE_CHATROOM:
+            return "CREATE_CHATROOM";
+        case MessageType::DELETE_CHATROOM:
+            return "DELETE_CHATROOM";
+        case MessageType::ADD_USER_TO_CHATROOM:
+            return "ADD_USER_TO_CHATROOM";
+        case MessageType::SEND_MESSAGE_TO_CHATROOM:
+            return "SEND_MESSAGE_TO_CHATROOM";
+        case MessageType::REMOVE_USER_FROM_CHATROOM:
+            return "REMOVE_USER_FROM_CHATROOM";
+        case MessageType::GET_USER_MESSAGES:
+            return "GET_USER_MESSAGES";
+        case MessageType::GET_CHATROOM_MESSAGES:
+            return "GET_CHATROOM_MESSAGES";
         case MessageType::SEND:
             return "SEND";
         case MessageType::RECV:
             return "RECV";
+        case MessageType::ACK:
+            return "ACK";
         case MessageType::UNDEFINED:
             return "UNDEFINED";
+        case MessageType::TEST:
+            return "TEST";
         default:
             return "UNKNOWN";
-    };
-    return "ERROR";
+    }
 }
 
-void Message::printMessage(){
+void Message::printMessage() const{
     std::cout << "Message Type: " << messageTypeToString(_messageType) << " Contents: " << _messageContents << std::endl;
 }

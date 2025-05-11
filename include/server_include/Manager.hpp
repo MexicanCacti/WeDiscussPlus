@@ -6,6 +6,8 @@
 #include <mutex>
 #include <atomic>
 #include <chrono>
+#include <asio.hpp>
+using asio::ip::tcp;
 using namespace std::chrono_literals;
 
 class Server;
@@ -27,10 +29,12 @@ class ManagerInterface{
 template<typename WorkType>
 class Manager : public ManagerInterface{
     protected:
-        std::queue<WorkType> _processQueue;
+        std::queue<std::pair<WorkType, std::shared_ptr<tcp::socket>>> _processQueue;
+        virtual void processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) = 0;
     public:
         Manager(Server& server) : ManagerInterface(server) {}
-        void addWork(WorkType& work);
+        void addWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void handleClient() override;
         inline size_t getQueueSize() const override {return _processQueue.size();}
         virtual void setUpDatabaseConnection() override = 0;
 };
