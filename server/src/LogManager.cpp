@@ -46,17 +46,41 @@ void LogManager<WorkType>::answerLogRequest(std::pair<WorkType, std::shared_ptr<
     switch(message.first.getMessageType()){
         case MessageType::GET_USER_MESSAGES:
             getUserMessages(message.first.getToUserID());
-            #ifdef _MOCK_TESTING
-                message.first.setMessageContents("getUserMessages");
-                asio::write(message.second, asio::buffer(message.first.serialize()));
-            #endif
+            try {
+                MessageBuilder<WorkType> responseBuilder(&message.first);
+                #ifndef _MOCK_TESTING
+                responseBuilder.setMessageContents("getUserMessages");
+                #endif
+                WorkType responseMessage(&responseBuilder);
+                
+                std::cout << "LogManager: Serializing getUserMessages response..." << std::endl;
+                std::vector<char> responseData = responseMessage.serialize();
+                std::cout << "LogManager: Sending getUserMessages response..." << std::endl;
+                asio::write(*message.second, asio::buffer(responseData));
+                std::cout << "LogManager: Sent getUserMessages response successfully" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "Error in getUserMessages response: " << e.what() << std::endl;
+                throw;
+            }
             break;
         case MessageType::GET_CHATROOM_MESSAGES:
             getChatroomMessages(message.first.getToChatroomID());
-            #ifdef _MOCK_TESTING
-                message.first.setMessageContents("getChatroomMessages");
-                asio::write(message.second, asio::buffer(message.first.serialize()));
-            #endif
+            try {
+                MessageBuilder<WorkType> responseBuilder(&message.first);
+                #ifndef _MOCK_TESTING
+                responseBuilder.setMessageContents("getChatroomMessages");
+                #endif
+                WorkType responseMessage(&responseBuilder);
+                
+                std::cout << "LogManager: Serializing getChatroomMessages response..." << std::endl;
+                std::vector<char> responseData = responseMessage.serialize();
+                std::cout << "LogManager: Sending getChatroomMessages response..." << std::endl;
+                asio::write(*message.second, asio::buffer(responseData));
+                std::cout << "LogManager: Sent getChatroomMessages response successfully" << std::endl;
+            } catch (const std::exception& e) {
+                std::cerr << "Error in getChatroomMessages response: " << e.what() << std::endl;
+                throw;
+            }
             break;
         default:
             break;

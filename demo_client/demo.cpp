@@ -1,8 +1,8 @@
 #include <iostream>
 #include <asio.hpp>
 #include <thread>
-#include "shared_include/Message.hpp"
-#include "shared_include/MessageBuilder.hpp"
+#include "Message.hpp"
+#include "MessageBuilder.hpp"
 
 using asio::ip::tcp;
 

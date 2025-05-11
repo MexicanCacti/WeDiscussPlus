@@ -57,6 +57,9 @@ class Server {
         void stopServer();
         void addMessageToLogBalancer(WorkType& message);
         inline bool isRunning() const {return _isRunning;}
+        void addFromClientSocket(int clientID, std::shared_ptr<tcp::socket> fromSocket);
+        void addToClientSocket(int clientID, std::shared_ptr<tcp::socket> toSocket);
+        ClientSockets getClientSocket(int clientID);
 };
 
 #endif

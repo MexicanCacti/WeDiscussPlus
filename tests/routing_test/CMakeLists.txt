@@ -22,7 +22,7 @@ target_include_directories(routing_test PRIVATE
     ${CMAKE_SOURCE_DIR}/tests
 )
 
-target_compile_definitions(routing_test PRIVATE _DEBUG)
+target_compile_definitions(routing_test PRIVATE _DEBUG _MOCK_TESTING)
 
 include(GoogleTest)
 gtest_discover_tests(routing_test)

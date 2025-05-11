@@ -42,57 +42,107 @@ void ChatroomManager<WorkType>::processWork(std::pair<WorkType, std::shared_ptr<
 
 template<typename WorkType>
 void ChatroomManager<WorkType>::addUserToChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    #ifdef _DEBUG
-        std::cout << "ChatroomManager: ADD_USER_TO_CHATROOM called" << std::endl;
-    #endif
-    #ifdef _MOCK_TESTING
-        work.first.setMessageContents("addUserToChatroom");
-        asio::write(work.second, asio::buffer(work.first.serialize()));
-    #endif
+    std::cout << "ChatroomManager: ADD_USER_TO_CHATROOM called" << std::endl;
+    try {
+        MessageBuilder<WorkType> responseBuilder(&work.first);
+        #ifndef _MOCK_TESTING
+        responseBuilder.setMessageContents("addUserToChatroom");
+        #endif
+        WorkType responseMessage(&responseBuilder);
+        
+        std::cout << "ChatroomManager: Serializing addUserToChatroom response..." << std::endl;
+        std::vector<char> responseData = responseMessage.serialize();
+        std::cout << "ChatroomManager: Sending addUserToChatroom response..." << std::endl;
+        asio::write(*work.second, asio::buffer(responseData));
+        std::cout << "ChatroomManager: Sent addUserToChatroom response successfully" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error in addUserToChatroom: " << e.what() << std::endl;
+        throw;
+    }
 }
 
 template<typename WorkType>
 void ChatroomManager<WorkType>::sendMessageToChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    #ifdef _DEBUG
-        std::cout << "ChatroomManager: SEND_MESSAGE_TO_CHATROOM called" << std::endl;
-    #endif
-    #ifdef _MOCK_TESTING
-        work.first.setMessageContents("sendMessageToChatroom");
-        asio::write(work.second, asio::buffer(work.first.serialize()));
-    #endif
+    std::cout << "ChatroomManager: SEND_MESSAGE_TO_CHATROOM called" << std::endl;
+    try {
+        MessageBuilder<WorkType> responseBuilder(&work.first);
+        #ifndef _MOCK_TESTING
+        responseBuilder.setMessageContents("sendMessageToChatroom");
+        #endif
+        WorkType responseMessage(&responseBuilder);
+        
+        std::cout << "ChatroomManager: Serializing sendMessageToChatroom response..." << std::endl;
+        std::vector<char> responseData = responseMessage.serialize();
+        std::cout << "ChatroomManager: Sending sendMessageToChatroom response..." << std::endl;
+        asio::write(*work.second, asio::buffer(responseData));
+        std::cout << "ChatroomManager: Sent sendMessageToChatroom response successfully" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error in sendMessageToChatroom: " << e.what() << std::endl;
+        throw;
+    }
 }
 
 template<typename WorkType>
 void ChatroomManager<WorkType>::createChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    #ifdef _DEBUG
-        std::cout << "ChatroomManager: CREATE_CHATROOM called" << std::endl;
-    #endif
-    #ifdef _MOCK_TESTING
-        work.first.setMessageContents("createChatroom");
-        asio::write(work.second, asio::buffer(work.first.serialize()));
-    #endif
+    std::cout << "ChatroomManager: CREATE_CHATROOM called" << std::endl;
+    try {
+        MessageBuilder<WorkType> responseBuilder(&work.first);
+        #ifndef _MOCK_TESTING
+        responseBuilder.setMessageContents("createChatroom");
+        #endif
+        WorkType responseMessage(&responseBuilder);
+        
+        std::cout << "ChatroomManager: Serializing createChatroom response..." << std::endl;
+        std::vector<char> responseData = responseMessage.serialize();
+        std::cout << "ChatroomManager: Sending createChatroom response..." << std::endl;
+        asio::write(*work.second, asio::buffer(responseData));
+        std::cout << "ChatroomManager: Sent createChatroom response successfully" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error in createChatroom: " << e.what() << std::endl;
+        throw;
+    }
 }
 
 template<typename WorkType>
 void ChatroomManager<WorkType>::deleteChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    #ifdef _DEBUG
-        std::cout << "ChatroomManager: DELETE_CHATROOM called" << std::endl;
-    #endif
-    #ifdef _MOCK_TESTING
-        work.first.setMessageContents("deleteChatroom");
-        asio::write(work.second, asio::buffer(work.first.serialize()));
-    #endif
+    std::cout << "ChatroomManager: DELETE_CHATROOM called" << std::endl;
+    try {
+        MessageBuilder<WorkType> responseBuilder(&work.first);
+        #ifndef _MOCK_TESTING
+        responseBuilder.setMessageContents("deleteChatroom");
+        #endif
+        WorkType responseMessage(&responseBuilder);
+        
+        std::cout << "ChatroomManager: Serializing deleteChatroom response..." << std::endl;
+        std::vector<char> responseData = responseMessage.serialize();
+        std::cout << "ChatroomManager: Sending deleteChatroom response..." << std::endl;
+        asio::write(*work.second, asio::buffer(responseData));
+        std::cout << "ChatroomManager: Sent deleteChatroom response successfully" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error in deleteChatroom: " << e.what() << std::endl;
+        throw;
+    }
 }
 
 template<typename WorkType>
 void ChatroomManager<WorkType>::removeUserFromChatroom(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    #ifdef _DEBUG
-        std::cout << "ChatroomManager: REMOVE_USER_FROM_CHATROOM called" << std::endl;
-    #endif
-    #ifdef _MOCK_TESTING
-        work.first.setMessageContents("removeUserFromChatroom");
-        asio::write(work.second, asio::buffer(work.first.serialize()));
-    #endif
+    std::cout << "ChatroomManager: REMOVE_USER_FROM_CHATROOM called" << std::endl;
+    try {
+        MessageBuilder<WorkType> responseBuilder(&work.first);
+        #ifndef _MOCK_TESTING
+        responseBuilder.setMessageContents("removeUserFromChatroom");
+        #endif
+        WorkType responseMessage(&responseBuilder);
+        
+        std::cout << "ChatroomManager: Serializing removeUserFromChatroom response..." << std::endl;
+        std::vector<char> responseData = responseMessage.serialize();
+        std::cout << "ChatroomManager: Sending removeUserFromChatroom response..." << std::endl;
+        asio::write(*work.second, asio::buffer(responseData));
+        std::cout << "ChatroomManager: Sent removeUserFromChatroom response successfully" << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error in removeUserFromChatroom: " << e.what() << std::endl;
+        throw;
+    }
 }
 
 template class ChatroomManager<Message>;
