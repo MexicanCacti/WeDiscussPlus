@@ -1,6 +1,6 @@
-#include "Message.hpp"
+#include "MockMessage.hpp"
 
-Message::Message(MessageBuilder<Message>* messageBuilder) 
+MockMessage::MockMessage(MessageBuilder<MockMessage>* messageBuilder) 
     :   _messageContents(messageBuilder->getMessageContents()),
         _to_user_name(messageBuilder->getToUsername()),
         _to_user_id(messageBuilder->getToUserID()),
@@ -11,30 +11,30 @@ Message::Message(MessageBuilder<Message>* messageBuilder)
         _messageType(messageBuilder->getMessageType()) {}
 
 
-void Message::serializeInt(std::vector<char>& buffer, int val) {
+void MockMessage::serializeInt(std::vector<char>& buffer, int val) {
     char* p = reinterpret_cast<char*>(&val);
     buffer.insert(buffer.end(), p, p + sizeof(int));
 }
-int  Message::deserializeInt(const std::vector<char>& buffer, size_t& offset){
+int  MockMessage::deserializeInt(const std::vector<char>& buffer, size_t& offset){
     int val;
     std::memcpy(&val, buffer.data() + offset, sizeof(int));
     offset += sizeof(int);
     return val;
 }
 
-void Message::serializeString(std::vector<char>& buffer, const std::string& str) {
+void MockMessage::serializeString(std::vector<char>& buffer, const std::string& str) {
     serializeInt(buffer, static_cast<int>(str.length()));
     buffer.insert(buffer.end(), str.begin(), str.end());
 }
 
-std::string  Message::deserializeString(const std::vector<char>& buffer, size_t& offset){
+std::string MockMessage::deserializeString(const std::vector<char>& buffer, size_t& offset){
     int len = deserializeInt(buffer, offset);
     std::string result(buffer.begin() + offset, buffer.begin() + offset + len);
     offset += len;
     return result;
 }
 
-std::vector<char> Message::serialize() const{
+std::vector<char> MockMessage::serialize() const{
     std::vector<char> buffer, content;
 
     serializeInt(content, static_cast<int>(_messageType));
@@ -52,8 +52,8 @@ std::vector<char> Message::serialize() const{
     return buffer;
 }
 
-Message Message::deserialize(const std::vector<char>& data){
-    Message message;
+MockMessage MockMessage::deserialize(const std::vector<char>& data){
+    MockMessage message;
     size_t offset = 0;
 
     // Now read the actual message content
@@ -70,7 +70,7 @@ Message Message::deserialize(const std::vector<char>& data){
     return message;
 }
 
-std::string Message::messageTypeToString(const MessageType& messageType){
+std::string MockMessage::messageTypeToString(const MessageType& messageType){
     switch(messageType){
         case MessageType::LOGOUT:
             return "LOGOUT";
@@ -113,6 +113,6 @@ std::string Message::messageTypeToString(const MessageType& messageType){
     }
 }
 
-void Message::printMessage() const{
+void MockMessage::printMessage() const{
     std::cout << "Message Type: " << messageTypeToString(_messageType) << " Contents: " << _messageContents << std::endl;
 }

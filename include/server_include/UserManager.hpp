@@ -1,11 +1,12 @@
 #ifndef USERMANAGER_HPP
 #define USERMANAGER_HPP
 
-#include "server_include/Manager.hpp"
-#include "shared_include/Message.hpp"
-#include "shared_include/User.hpp"
+#include "Manager.hpp"
+#include "Message.hpp"
+#include "User.hpp"
 
 // Forward Declaration to avoid circular dependency
+template<typename WorkType>
 class Server;
 
 template<typename WorkType>
@@ -25,7 +26,7 @@ class UserManager : public Manager<WorkType> {
         void processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) override;
         void setUpDatabaseConnection() override;
     public:
-        UserManager(Server& server) : Manager<WorkType>(server) {this->setUpDatabaseConnection();}
+        UserManager(Server<WorkType>& server) : Manager<WorkType>(server) {this->setUpDatabaseConnection();}
 };
 
 #endif

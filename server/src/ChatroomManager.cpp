@@ -1,4 +1,4 @@
-#include "server_include/ChatroomManager.hpp"
+#include "ChatroomManager.hpp"
 #include <chrono>
 using namespace std::chrono_literals;
 
@@ -45,9 +45,9 @@ void ChatroomManager<WorkType>::addUserToChatroom(std::pair<WorkType, std::share
     #ifdef _DEBUG
         std::cout << "ChatroomManager: ADD_USER_TO_CHATROOM called" << std::endl;
     #endif
-    #ifdef _ROUTE_TESTING
+    #ifdef _MOCK_TESTING
         work.first.setMessageContents("addUserToChatroom");
-        asio::write(*work.second, asio::buffer(work.first.serialize()));
+        asio::write(work.second, asio::buffer(work.first.serialize()));
     #endif
 }
 
@@ -56,9 +56,9 @@ void ChatroomManager<WorkType>::sendMessageToChatroom(std::pair<WorkType, std::s
     #ifdef _DEBUG
         std::cout << "ChatroomManager: SEND_MESSAGE_TO_CHATROOM called" << std::endl;
     #endif
-    #ifdef _ROUTE_TESTING
+    #ifdef _MOCK_TESTING
         work.first.setMessageContents("sendMessageToChatroom");
-        asio::write(*work.second, asio::buffer(work.first.serialize()));
+        asio::write(work.second, asio::buffer(work.first.serialize()));
     #endif
 }
 
@@ -67,9 +67,9 @@ void ChatroomManager<WorkType>::createChatroom(std::pair<WorkType, std::shared_p
     #ifdef _DEBUG
         std::cout << "ChatroomManager: CREATE_CHATROOM called" << std::endl;
     #endif
-    #ifdef _ROUTE_TESTING
+    #ifdef _MOCK_TESTING
         work.first.setMessageContents("createChatroom");
-        asio::write(*work.second, asio::buffer(work.first.serialize()));
+        asio::write(work.second, asio::buffer(work.first.serialize()));
     #endif
 }
 
@@ -78,9 +78,9 @@ void ChatroomManager<WorkType>::deleteChatroom(std::pair<WorkType, std::shared_p
     #ifdef _DEBUG
         std::cout << "ChatroomManager: DELETE_CHATROOM called" << std::endl;
     #endif
-    #ifdef _ROUTE_TESTING
+    #ifdef _MOCK_TESTING
         work.first.setMessageContents("deleteChatroom");
-        asio::write(*work.second, asio::buffer(work.first.serialize()));
+        asio::write(work.second, asio::buffer(work.first.serialize()));
     #endif
 }
 
@@ -89,10 +89,11 @@ void ChatroomManager<WorkType>::removeUserFromChatroom(std::pair<WorkType, std::
     #ifdef _DEBUG
         std::cout << "ChatroomManager: REMOVE_USER_FROM_CHATROOM called" << std::endl;
     #endif
-    #ifdef _ROUTE_TESTING
+    #ifdef _MOCK_TESTING
         work.first.setMessageContents("removeUserFromChatroom");
-        asio::write(*work.second, asio::buffer(work.first.serialize()));
+        asio::write(work.second, asio::buffer(work.first.serialize()));
     #endif
 }
 
 template class ChatroomManager<Message>;
+template class ChatroomManager<MockMessage>;

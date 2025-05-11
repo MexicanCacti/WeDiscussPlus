@@ -1,13 +1,13 @@
-
 #ifndef MESSAGEBUILDER_HPP
 #define MESSAGEBUILDER_HPP
 
 class Message;
+class MockMessage;
 
-#include "shared_include/MessageType.hpp"
-#include "shared_include/MessageInterface.hpp"
+#include "MessageType.hpp"
 #include <string>
 
+template<typename MessageObject>
 class MessageBuilder {
     private:
         std::string _messageContents;
@@ -21,7 +21,7 @@ class MessageBuilder {
 
     public:
         MessageBuilder() : _messageContents(""), _to_user_name(""), _to_user_id(-1), _from_user_name(""), _from_user_id(-1), _to_chatroom_id(-1), _from_chatroom_id(-1), _messageType(MessageType::UNDEFINED) {}
-        MessageBuilder(MessageInterface* message);
+        MessageBuilder(MessageObject* message);
 
         inline void setMessageContents(const std::string& messageContents) {_messageContents = messageContents;}
         inline const std::string& getMessageContents() const {return _messageContents;}
@@ -47,7 +47,7 @@ class MessageBuilder {
         inline void setMessageType(MessageType messageType) {_messageType = messageType;}
         inline MessageType getMessageType() const {return _messageType;}   
 
-        MessageInterface* buildMessage();
+        MessageObject buildMessage();
 };
 
 #endif

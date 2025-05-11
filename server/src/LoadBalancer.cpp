@@ -1,8 +1,8 @@
-#include "server_include/LoadBalancer.hpp"
-#include "server_include/Server.hpp"
+#include "LoadBalancer.hpp"
+#include "Server.hpp"
 
 template<typename WorkType>
-void LoadBalancer<WorkType>::initManagers(const int managerAmount, Server& server){
+void LoadBalancer<WorkType>::initManagers(const int managerAmount, Server<WorkType>& server){
     for(int i = 0; i < managerAmount; ++i){
         auto manager = createManager(server);
         addManager(++_managerID, manager);
@@ -107,3 +107,4 @@ LoadBalancer<WorkType>::~LoadBalancer(){
 }
 
 template class LoadBalancer<Message>;
+template class LoadBalancer<MockMessage>;

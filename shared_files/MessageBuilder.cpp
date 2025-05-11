@@ -1,7 +1,9 @@
-#include "shared_include/MessageBuilder.hpp"
-#include "shared_include/MessageInterface.hpp"
+#include "MessageBuilder.hpp"
+#include "Message.hpp"
+#include "MockMessage.hpp"
 
-MessageBuilder::MessageBuilder(MessageInterface* message)
+template<typename MessageObject>
+MessageBuilder<MessageObject>::MessageBuilder(MessageObject* message)
     :   _messageContents(message->getMessageContents()),
         _to_user_name(message->getToUsername()),
         _to_user_id(message->getToUserID()),
@@ -11,6 +13,11 @@ MessageBuilder::MessageBuilder(MessageInterface* message)
         _from_chatroom_id(message->getFromChatroomID()),
         _messageType(message->getMessageType()) {}
 
-MessageInterface* MessageBuilder::buildMessage(){
-    return *MessageInterface(this);
+template<typename MessageObject>
+MessageObject MessageBuilder<MessageObject>::buildMessage(){
+    return MessageObject(this);
 }
+
+template class MessageBuilder<Message>;
+template class MessageBuilder<MockMessage>;
+    

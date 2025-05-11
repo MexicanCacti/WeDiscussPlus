@@ -6,8 +6,9 @@
 using asio::ip::tcp;
 using namespace std::chrono_literals;
 
-#include "server_include/Manager.hpp"
+#include "Manager.hpp"
 
+template<typename WorkType>
 class Server;
 
 template<typename WorkType>
@@ -23,12 +24,12 @@ class LoadBalancer{
 
         LoadBalancer() = default;
 
-        virtual std::shared_ptr<Manager<WorkType>> createManager(Server& server) = 0;
+        virtual std::shared_ptr<Manager<WorkType>> createManager(Server<WorkType>& server) = 0;
         void findBestManager(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
         void assignWork(int managerID, std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
     public:
         void waitForWork();
-        void initManagers(const int managerAmount, Server& server);
+        void initManagers(const int managerAmount, Server<WorkType>& server);
         void addManager(int id, std::shared_ptr<Manager<WorkType>> manager);
         void pushWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>&& work);
         inline std::unordered_map<int, std::shared_ptr<Manager<WorkType>>> getManagers() const {return _managers;};

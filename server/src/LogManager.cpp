@@ -1,5 +1,5 @@
-#include "server_include/LogManager.hpp"
-#include "server_include/Server.hpp"
+#include "LogManager.hpp"
+#include "Server.hpp"
 #include <chrono>
 using namespace std::chrono_literals;
 
@@ -11,7 +11,7 @@ void LogManager<WorkType>::setUpDatabaseConnection(){
 template<typename WorkType>
 void LogManager<WorkType>::processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) {
     #ifdef _DEBUG
-    std::cout << "LogManager processing message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
+    std::cout << "LogManager processing message type: " << WorkType::messageTypeToString(work.first.getMessageType()) << std::endl;
     #endif
             
     switch(work.first.getMessageType()){
@@ -21,7 +21,7 @@ void LogManager<WorkType>::processWork(std::pair<WorkType, std::shared_ptr<tcp::
             break;
         default:
             #ifdef _DEBUG
-            std::cout << "Unknown message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
+            std::cout << "Unknown message type: " << WorkType::messageTypeToString(work.first.getMessageType()) << std::endl;
             #endif
             break;
     }
@@ -46,16 +46,16 @@ void LogManager<WorkType>::answerLogRequest(std::pair<WorkType, std::shared_ptr<
     switch(message.first.getMessageType()){
         case MessageType::GET_USER_MESSAGES:
             getUserMessages(message.first.getToUserID());
-            #ifdef _ROUTE_TESTING
+            #ifdef _MOCK_TESTING
                 message.first.setMessageContents("getUserMessages");
-                asio::write(*message.second, asio::buffer(message.first.serialize()));
+                asio::write(message.second, asio::buffer(message.first.serialize()));
             #endif
             break;
         case MessageType::GET_CHATROOM_MESSAGES:
             getChatroomMessages(message.first.getToChatroomID());
-            #ifdef _ROUTE_TESTING
+            #ifdef _MOCK_TESTING
                 message.first.setMessageContents("getChatroomMessages");
-                asio::write(*message.second, asio::buffer(message.first.serialize()));
+                asio::write(message.second, asio::buffer(message.first.serialize()));
             #endif
             break;
         default:
@@ -71,3 +71,4 @@ void LogManager<WorkType>::storeMessage(WorkType& message) {
 }
 
 template class LogManager<Message>;
+template class LogManager<MockMessage>;

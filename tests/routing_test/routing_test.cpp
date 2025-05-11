@@ -21,19 +21,19 @@ auto endpoints = resolver.resolve("127.0.0.1", "3333");
 
 std::string messageContents = "Test Contents";
 std::string toUsername = "Test ToUsername";
-int toUserID = 99;
+int toUserID = 99; 
 std::string fromUsername = "Test FromUsername";
 int fromUserID = 100;
 int toChatroomID = 0;
 int fromChatroomID = 0;
 
-void buildMessage(MessageBuilder&, const std::string&, const std::string&, const int, const std::string&, const int, const int, const int, const MessageType);
-Message readMessageFromSocket(tcp::socket& socket);
+void buildMessage(MessageBuilder<MockMessage>&, const std::string&, const std::string&, const int, const std::string&, const int, const int, const int, const MessageType);
+MockMessage readMessageFromSocket(tcp::socket& socket);
 
 class RoutingTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        _server = std::make_unique<Server>(3333);
+        _server = std::make_unique<Server<MockMessage>>(3333);
         std::cout << "Starting Server..." << std::endl;
         std::thread([this](){_server->startServer();}).detach();
         std::this_thread::sleep_for(100ms);
@@ -52,9 +52,9 @@ protected:
         asio::connect(sendSocket, endpoints);
         
         // Send initial SEND message
-        MessageBuilder sendBuilder;
+        MessageBuilder<MockMessage> sendBuilder;
         buildMessage(sendBuilder, "SEND", toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, MessageType::SEND);
-        Message sendMessage(&sendBuilder);
+        MockMessage sendMessage(&sendBuilder);
         std::vector<char> sendData = sendMessage.serialize();
         asio::write(sendSocket, asio::buffer(sendData));
 
@@ -62,22 +62,22 @@ protected:
         asio::connect(recvSocket, endpoints);
         
         // Send initial RECV message
-        MessageBuilder recvBuilder;
+        MessageBuilder<MockMessage> recvBuilder;
         buildMessage(recvBuilder, "RECV", toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, MessageType::RECV);
-        Message recvMessage(&recvBuilder);
+        MockMessage recvMessage(&recvBuilder);
         std::vector<char> recvData = recvMessage.serialize();
         asio::write(recvSocket, asio::buffer(recvData));
 
         // Wait for ACK
-        Message ackMessage = readMessageFromSocket(recvSocket);
+        MockMessage ackMessage = readMessageFromSocket(recvSocket);
         EXPECT_EQ(ackMessage.getMessageType(), MessageType::ACK);
     }
 
 private:
-    std::unique_ptr<Server> _server;
+    std::unique_ptr<Server<MockMessage>> _server;
 };
 
-Message readMessageFromSocket(tcp::socket& socket) {
+MockMessage readMessageFromSocket(tcp::socket& socket) {
     int msgSize = 0;
     asio::read(socket, asio::buffer(&msgSize, sizeof(int)));
     if(msgSize <= 0) {
@@ -85,7 +85,7 @@ Message readMessageFromSocket(tcp::socket& socket) {
     }
     std::vector<char> buffer(msgSize);
     asio::read(socket, asio::buffer(buffer.data(), msgSize));
-    return Message::deserialize(buffer);
+    return MockMessage::deserialize(buffer);
 }
 
 TEST_F(RoutingTest, UserManagerRouting) {
@@ -104,14 +104,14 @@ TEST_F(RoutingTest, UserManagerRouting) {
     };
 
     for(const auto& [messageType, expectedFunction] : userManagerTypes) {
-        MessageBuilder builder;
+        MessageBuilder<MockMessage> builder;
         buildMessage(builder, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
-        Message message(&builder);
+        MockMessage message(&builder);
         std::vector<char> data = message.serialize();
         asio::write(sendSocket, asio::buffer(data));
 
         // Read response
-        Message response = readMessageFromSocket(recvSocket);
+        MockMessage response = readMessageFromSocket(recvSocket);
         EXPECT_EQ(response.getMessageContents(), expectedFunction);
     }
 }
@@ -130,14 +130,14 @@ TEST_F(RoutingTest, ChatroomManagerRouting) {
     };
 
     for(const auto& [messageType, expectedFunction] : chatroomManagerTypes) {
-        MessageBuilder builder;
+        MessageBuilder<MockMessage> builder;
         buildMessage(builder, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
-        Message message(&builder);
+        MockMessage message(&builder);
         std::vector<char> data = message.serialize();
         asio::write(sendSocket, asio::buffer(data));
 
         // Read response
-        Message response = readMessageFromSocket(recvSocket);
+        MockMessage response = readMessageFromSocket(recvSocket);
         EXPECT_EQ(response.getMessageContents(), expectedFunction);
     }
 }
@@ -153,19 +153,19 @@ TEST_F(RoutingTest, LogManagerRouting) {
     };
 
     for(const auto& [messageType, expectedFunction] : logManagerTypes) {
-        MessageBuilder builder;
+        MessageBuilder<MockMessage> builder;
         buildMessage(builder, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
-        Message message(&builder);
+        MockMessage message(&builder);
         std::vector<char> data = message.serialize();
         asio::write(sendSocket, asio::buffer(data));
 
         // Read response
-        Message response = readMessageFromSocket(recvSocket);
+        MockMessage response = readMessageFromSocket(recvSocket);
         EXPECT_EQ(response.getMessageContents(), expectedFunction);
     }
 }
 
-void buildMessage(MessageBuilder& messageBuilder, const std::string& messageContents, const std::string& toUsername, const int toUserID, const std::string& fromUsername, const int fromUserID, const int toChatroomID, const int fromChatroomID, const MessageType messageType) {
+void buildMessage(MessageBuilder<MockMessage>& messageBuilder, const std::string& messageContents, const std::string& toUsername, const int toUserID, const std::string& fromUsername, const int fromUserID, const int toChatroomID, const int fromChatroomID, const MessageType messageType) {
     messageBuilder.setMessageContents(messageContents);
     messageBuilder.setToUsername(toUsername);
     messageBuilder.setToUserID(toUserID);

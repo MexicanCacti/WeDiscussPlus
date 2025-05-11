@@ -2,7 +2,7 @@
 #define MESSAGE_HPP
 
 #include "MessageType.hpp"
-#include "shared_include/MessageBuilder.hpp"
+#include "MessageBuilder.hpp"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -29,7 +29,7 @@ class Message{
     public:
         Message() : _messageContents(""), _to_user_name(""), _to_user_id(-1), _from_user_name(""), _from_user_id(-1), _to_chatroom_id(-1), _from_chatroom_id(-1), _messageType(MessageType::UNDEFINED) {};
 
-        Message(MessageBuilder* messageBuilder);
+        Message(MessageBuilder<Message>* messageBuilder);
 
         inline std::string getMessageContents() const {return _messageContents;}
 
@@ -53,7 +53,7 @@ class Message{
 
         static std::string messageTypeToString(const MessageType& messageType);
         
-        void printMessage();
+        void printMessage() const;
 };
 
 #endif

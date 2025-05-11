@@ -1,13 +1,14 @@
 #ifndef USERMANAGERBALANCER_HPP
 #define USERMANAGERBALANCER_HPP
-#include "server_include/UserManager.hpp"
-#include "server_include/LoadBalancer.hpp"
-#include "shared_include/Message.hpp"
+#include "UserManager.hpp"
+#include "LoadBalancer.hpp"
+#include "Message.hpp"
+#include "MockMessage.hpp"
 
 template<typename WorkType>
 class UserManagerBalancer : public LoadBalancer<WorkType>{
     private:
-        virtual std::shared_ptr<Manager<WorkType>> createManager(Server& server) override;
+        virtual std::shared_ptr<Manager<WorkType>> createManager(Server<WorkType>& server) override;
     public:
         using LoadBalancer<WorkType>::LoadBalancer;
 };

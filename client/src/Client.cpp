@@ -1,5 +1,5 @@
-#include "client_include/Client.hpp"
-#include "shared_include/Message.hpp"
+#include "Client.hpp"
+#include "Message.hpp"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -15,7 +15,7 @@ Client::Client(const std::string& host, int port)
 void Client::start() {
     try {
         // Send initial connection message
-        MessageBuilder builder;
+        MessageBuilder<Message> builder;
         builder.setMessageType(MessageType::SEND);
         builder.setFromUserID(1);  // Test user ID
         builder.setMessageContents("Test connection");
@@ -44,7 +44,7 @@ void Client::start() {
             
             if (input == "quit") break;
 
-            MessageBuilder msgBuilder;
+            MessageBuilder<Message> msgBuilder;
             msgBuilder.setMessageType(MessageType::SEND);
             msgBuilder.setFromUserID(1);
             msgBuilder.setMessageContents(input);

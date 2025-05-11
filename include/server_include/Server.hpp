@@ -6,23 +6,24 @@
 #include <iostream>
 #include <asio.hpp>
 
-#include "shared_include/Message.hpp"
-#include "server_include/LoadBalancer.hpp"
-#include "server_include/ChatroomManagerBalancer.hpp"
-#include "server_include/UserManagerBalancer.hpp"
-#include "server_include/LogManagerBalancer.hpp"
+#include "Message.hpp"
+#include "LoadBalancer.hpp"
+#include "ChatroomManagerBalancer.hpp"
+#include "UserManagerBalancer.hpp"
+#include "LogManagerBalancer.hpp"
 
 using asio::ip::tcp;
 
+template<typename WorkType>
 class Server {
     int _MAX_LOG_MANAGERS = 2;
     int _MAX_USER_MANAGERS = 2;
     int _MAX_CHATROOM_MANAGERS = 2;
 
     protected:
-        std::unique_ptr<ChatroomManagerBalancer<Message>> _chatroomManagerBalancer = nullptr;
-        std::unique_ptr<UserManagerBalancer<Message>> _userManagerBalancer = nullptr;
-        std::unique_ptr<LogManagerBalancer<Message>> _logManagerBalancer = nullptr;
+        std::unique_ptr<ChatroomManagerBalancer<WorkType>> _chatroomManagerBalancer = nullptr;
+        std::unique_ptr<UserManagerBalancer<WorkType>> _userManagerBalancer = nullptr;
+        std::unique_ptr<LogManagerBalancer<WorkType>> _logManagerBalancer = nullptr;
         
         struct ClientSockets{
             std::shared_ptr<tcp::socket> fromSocket;
@@ -43,8 +44,8 @@ class Server {
         void handleClient(int clientID);
         void registerClient(std::shared_ptr<tcp::socket> clientSocket);
         void registerToClientSocket(int clientID,std::shared_ptr<tcp::socket> clientSocket);
-        Message readMessageFromSocket(std::shared_ptr<tcp::socket> socket);
-        void sendMessageToSocket(std::shared_ptr<tcp::socket> socket, Message& message);
+        WorkType readMessageFromSocket(std::shared_ptr<tcp::socket> socket);
+        void sendMessageToSocket(std::shared_ptr<tcp::socket> socket, WorkType& message);
         void shutdown();
     public:
         Server(int port);
@@ -54,7 +55,7 @@ class Server {
         inline void setMaxLogManagers(int maxLogManagers) {_MAX_LOG_MANAGERS = maxLogManagers;}
         void startServer();
         void stopServer();
-        void addMessageToLogBalancer(Message& message);
+        void addMessageToLogBalancer(WorkType& message);
         inline bool isRunning() const {return _isRunning;}
 };
 

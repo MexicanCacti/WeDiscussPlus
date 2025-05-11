@@ -10,15 +10,17 @@
 using asio::ip::tcp;
 using namespace std::chrono_literals;
 
+template<typename WorkType>
 class Server;
 
-class ManagerInterface{
+template<typename WorkType>
+class ManagerInterface {
     protected:
-        Server& _server;
+        Server<WorkType>& _server;
         std::mutex _processQueueMutex;
         std::atomic<bool> _shouldDoWork = true;
     public:
-        ManagerInterface(Server& server) : _server(server) {};
+        ManagerInterface(Server<WorkType>& server) : _server(server) {};
         virtual ~ManagerInterface() = default;
         virtual void handleClient() = 0;
         inline void stop() {_shouldDoWork = false;}
@@ -27,12 +29,12 @@ class ManagerInterface{
 };
 
 template<typename WorkType>
-class Manager : public ManagerInterface{
+class Manager : public ManagerInterface<WorkType> {
     protected:
         std::queue<std::pair<WorkType, std::shared_ptr<tcp::socket>>> _processQueue;
         virtual void processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) = 0;
     public:
-        Manager(Server& server) : ManagerInterface(server) {}
+        Manager(Server<WorkType>& server) : ManagerInterface<WorkType>(server) {}
         void addWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
         void handleClient() override;
         inline size_t getQueueSize() const override {return _processQueue.size();}

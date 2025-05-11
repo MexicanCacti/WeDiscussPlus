@@ -1,10 +1,10 @@
 #ifndef TEST_SERVER_HPP
 #define TEST_SERVER_HPP
-#include "server_include/Server.hpp"
-
-class TestingServer : public Server {
+#include "Server.hpp"
+#include "MockMessage.hpp"
+class TestingServer : public Server<MockMessage> {
     public:
-        TestingServer(int port) : Server(port) {}
+        TestingServer(int port) : Server<MockMessage>(port) {}
 };
 
 #endif

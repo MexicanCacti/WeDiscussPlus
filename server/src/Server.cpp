@@ -1,12 +1,14 @@
-#include "server_include/Server.hpp"
+#include "Server.hpp"
 
-Server::Server(int port) : _port(port), _ioContext(), _connectionAcceptor(_ioContext, tcp::endpoint(tcp::v4(), port)) {}
+template<typename WorkType>
+Server<WorkType>::Server(int port) : _port(port), _ioContext(), _connectionAcceptor(_ioContext, tcp::endpoint(tcp::v4(), port)) {}
 
-void Server::startServer(){
+template<typename WorkType>
+void Server<WorkType>::startServer(){
     try {
-        _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer<Message>>();
-        _userManagerBalancer = std::make_unique<UserManagerBalancer<Message>>();
-        _logManagerBalancer = std::make_unique<LogManagerBalancer<Message>>();
+        _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer<WorkType>>();
+        _userManagerBalancer = std::make_unique<UserManagerBalancer<WorkType>>();
+        _logManagerBalancer = std::make_unique<LogManagerBalancer<WorkType>>();
         
         _chatroomManagerBalancer->initManagers(_MAX_CHATROOM_MANAGERS, *this);
         _userManagerBalancer->initManagers(_MAX_USER_MANAGERS, *this);
@@ -43,7 +45,8 @@ void Server::startServer(){
     }
 }
 
-void Server::stopServer(){
+template<typename WorkType>
+void Server<WorkType>::stopServer(){
     _isRunning = false;
     
     if (_chatroomManagerBalancer) _chatroomManagerBalancer->stopAllThreads();
@@ -57,7 +60,8 @@ void Server::stopServer(){
     _ioContext.stop();
 }
 
-void Server::listenForConnections(){
+template<typename WorkType>
+void Server<WorkType>::listenForConnections(){
     tcp::endpoint localEndpoint = _connectionAcceptor.local_endpoint();
     std::cout << "Server is listening on " << localEndpoint.address().to_string() << ":" << localEndpoint.port() << std::endl;
     _isRunning = true;
@@ -77,13 +81,14 @@ void Server::listenForConnections(){
     }
 }
 
-void Server::registerClient(std::shared_ptr<tcp::socket> clientSocket){
+template<typename WorkType>
+void Server<WorkType>::registerClient(std::shared_ptr<tcp::socket> clientSocket){
     try {
         #ifdef _DEBUG
             std::cout << "Client connected, Waiting for initial message..." << std::endl;
         #endif
 
-        Message message = readMessageFromSocket(clientSocket);
+        WorkType message = readMessageFromSocket(clientSocket);
         int clientID(message.getFromUserID());
         MessageType messageType(message.getMessageType());
 
@@ -103,7 +108,8 @@ void Server::registerClient(std::shared_ptr<tcp::socket> clientSocket){
     }
 }
 
-void Server::registerToClientSocket(int clientID, std::shared_ptr<tcp::socket> clientSocket){
+template<typename WorkType>
+void Server<WorkType>::registerToClientSocket(int clientID, std::shared_ptr<tcp::socket> clientSocket){
     /*
     std::unique_lock<std::mutex> socketLock(_clientSocketMapMutex);
     if(_clientSocketMap.find(clientID) == _clientSocketMap.end() || _clientSocketMap[clientID].fromSocket != nullptr){
@@ -124,7 +130,8 @@ void Server::registerToClientSocket(int clientID, std::shared_ptr<tcp::socket> c
     });
 }
 
-void Server::handleClient(int clientID){
+template<typename WorkType>
+void Server<WorkType>::handleClient(int clientID){
     try{
         std::shared_ptr<tcp::socket> fromSocket;
         std::shared_ptr<tcp::socket> toSocket;
@@ -149,19 +156,19 @@ void Server::handleClient(int clientID){
         #endif
 
         // Send SYSTEM ACK
-        MessageBuilder ackBuilder;
+        MessageBuilder<WorkType> ackBuilder;
         ackBuilder.setMessageType(MessageType::ACK);
         ackBuilder.setFromUserID(-1);
         ackBuilder.setToUserID(clientID);
         ackBuilder.setMessageContents("Handler thread registered.");
-        Message ackMessage(&ackBuilder);
+        WorkType ackMessage(&ackBuilder);
         sendMessageToSocket(toSocket, ackMessage);
         #ifdef _DEBUG
             std::cout << "Sent ACK to Client" << std::endl;
         #endif
 
         while(true){
-            Message message = readMessageFromSocket(fromSocket);
+            WorkType message = readMessageFromSocket(fromSocket);
             #ifdef _DEBUG
                 std::cout << "Received from client " << clientID << ": ";
                 message.printMessage();
@@ -222,7 +229,8 @@ void Server::handleClient(int clientID){
     #endif
 }
 
-Message Server::readMessageFromSocket(std::shared_ptr<tcp::socket> socket){
+template<typename WorkType>
+WorkType Server<WorkType>::readMessageFromSocket(std::shared_ptr<tcp::socket> socket){
     int msgSize = 0;
     asio::read(*socket, asio::buffer(&msgSize, sizeof(int)));
     if(msgSize <= 0){
@@ -230,21 +238,27 @@ Message Server::readMessageFromSocket(std::shared_ptr<tcp::socket> socket){
     }
     std::vector<char> buffer(msgSize);
     asio::read(*socket, asio::buffer(buffer.data(), msgSize));
-    return Message::deserialize(buffer);
+    return WorkType::deserialize(buffer);
 }
 
-void Server::sendMessageToSocket(std::shared_ptr<tcp::socket> socket, Message& message){
+template<typename WorkType>
+void Server<WorkType>::sendMessageToSocket(std::shared_ptr<tcp::socket> socket, WorkType& message){
     std::vector<char> serializedMessage = message.serialize();
     asio::write(*socket, asio::buffer(serializedMessage));
 }
 
-void Server::shutdown(){
+template<typename WorkType>
+void Server<WorkType>::shutdown(){
     _isRunning = false;
     if(_chatroomManagerBalancer) _chatroomManagerBalancer->stopAllThreads();
     if(_userManagerBalancer) _userManagerBalancer->stopAllThreads();
     if(_logManagerBalancer) _logManagerBalancer->stopAllThreads();
 }
 
-void Server::addMessageToLogBalancer(Message& message){
-
+template<typename WorkType>
+void Server<WorkType>::addMessageToLogBalancer(WorkType& message){
+    _logManagerBalancer->pushWork(std::make_pair(message, nullptr));
 }
+
+template class Server<Message>;
+template class Server<MockMessage>;

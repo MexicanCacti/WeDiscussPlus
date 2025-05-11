@@ -1,15 +1,16 @@
 #ifndef CHATROOMMANAGER_HPP
 #define CHATROOMMANAGER_HPP
 
+#include "Manager.hpp"
+#include "Message.hpp"
+#include "Chatroom.hpp"
+#include "MockMessage.hpp"
 
-#include "server_include/Manager.hpp"
-#include "shared_include/Message.hpp"
-#include "shared_include/Chatroom.hpp"
-
+template<typename WorkType>
 class Server;
 
 template<typename WorkType>
-class ChatroomManager : public Manager<WorkType>{
+class ChatroomManager : public Manager<WorkType> {
     private:
     static std::unordered_map<int, Chatroom> _chatroomMap; // Cache of chatroomID : Chatroom object
     std::mutex _chatroomMapMutex;
@@ -22,7 +23,7 @@ class ChatroomManager : public Manager<WorkType>{
     void setUpDatabaseConnection() override;
     void processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) override;
 public:
-    ChatroomManager(Server& server) : Manager<WorkType>(server) {this->setUpDatabaseConnection();}
+    ChatroomManager(Server<WorkType>& server) : Manager<WorkType>(server) {this->setUpDatabaseConnection();}
 };
 
 #endif
