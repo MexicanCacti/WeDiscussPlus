@@ -1,11 +1,16 @@
 #ifndef MESSAGEBUILDER_HPP
 #define MESSAGEBUILDER_HPP
 
-class Message;
-class MockMessage;
-
 #include "MessageType.hpp"
 #include <string>
+#include <memory>
+#include <unordered_map>
+
+class MessageInterface;
+class Message;
+class MockMessage;
+class User;
+class Chatroom;
 
 template<typename MessageObject>
 class MessageBuilder {
@@ -18,9 +23,28 @@ class MessageBuilder {
         int _to_chatroom_id;
         int _from_chatroom_id;
         MessageType _messageType;
+        
+        // Attributes from Message Class
+        std::shared_ptr<User> _user;
+        std::shared_ptr<Chatroom> _chatroom;
+        std::shared_ptr<std::unordered_map<int, Chatroom>> _chatrooms;
+        std::shared_ptr<std::unordered_map<int, std::string>> _userIDToUsername;
 
     public:
-        MessageBuilder() : _messageContents(""), _to_user_name(""), _to_user_id(-1), _from_user_name(""), _from_user_id(-1), _to_chatroom_id(-1), _from_chatroom_id(-1), _messageType(MessageType::UNDEFINED) {}
+        MessageBuilder() : 
+            _messageContents(""), 
+            _to_user_name(""), 
+            _to_user_id(-1), 
+            _from_user_name(""), 
+            _from_user_id(-1), 
+            _to_chatroom_id(-1), 
+            _from_chatroom_id(-1), 
+            _messageType(MessageType::UNDEFINED),
+            _user(nullptr),
+            _chatroom(nullptr),
+            _chatrooms(nullptr),
+            _userIDToUsername(nullptr) {}
+            
         MessageBuilder(MessageObject* message);
 
         inline void setMessageContents(const std::string& messageContents) {_messageContents = messageContents;}
@@ -45,7 +69,19 @@ class MessageBuilder {
         inline int getFromChatroomID() const {return _from_chatroom_id;}
         
         inline void setMessageType(MessageType messageType) {_messageType = messageType;}
-        inline MessageType getMessageType() const {return _messageType;}   
+        inline MessageType getMessageType() const {return _messageType;}
+
+        inline void setUser(std::shared_ptr<User> user) { _user = user; }
+        inline std::shared_ptr<User> getUser() const { return _user; }
+        
+        inline void setChatroom(std::shared_ptr<Chatroom> chatroom) { _chatroom = chatroom; }
+        inline std::shared_ptr<Chatroom> getChatroom() const { return _chatroom; }
+        
+        inline void setChatrooms(std::shared_ptr<std::unordered_map<int, Chatroom>> chatrooms) { _chatrooms = chatrooms; }
+        inline std::shared_ptr<std::unordered_map<int, Chatroom>> getChatrooms() const { return _chatrooms; }
+        
+        inline void setUserIDToUsername(std::shared_ptr<std::unordered_map<int, std::string>> userIDToUsername) { _userIDToUsername = userIDToUsername; }
+        inline std::shared_ptr<std::unordered_map<int, std::string>> getUserIDToUsername() const { return _userIDToUsername; }
 
         MessageObject buildMessage();
 };

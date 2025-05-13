@@ -1,38 +1,14 @@
 #ifndef MOCK_MESSAGE_HPP
 #define MOCK_MESSAGE_HPP
 
-#include "MessageType.hpp"
+#include "MessageInterface.hpp"
 #include "MessageBuilder.hpp"
-#include <string>
-#include <vector>
 #include <iostream>
 
-class MockMessage {
-private:
-    std::string _messageContents;
-    std::string _to_user_name;
-    int _to_user_id;
-    std::string _from_user_name;
-    int _from_user_id;
-    int _to_chatroom_id;
-    int _from_chatroom_id;
-    MessageType _messageType;
-    static void serializeInt(std::vector<char>& buffer, int val);
-    static int deserializeInt(const std::vector<char>& buffer, size_t& offset);
-    static void serializeString(std::vector<char>& buffer, const std::string& str);
-    static std::string deserializeString(const std::vector<char>& buffer, size_t& offset);
+class MockMessage : public MessageInterface {
 public:
-    MockMessage() : _messageContents(""), _to_user_name(""), _to_user_id(-1), _from_user_name(""), _from_user_id(-1), _to_chatroom_id(-1), _from_chatroom_id(-1), _messageType(MessageType::UNDEFINED) {}
-    MockMessage(MessageBuilder<MockMessage>* builder);
-
-    std::string getMessageContents() const { return _messageContents; }
-    std::string getToUsername() const { return _to_user_name; }
-    int getToUserID() const { return _to_user_id; }
-    std::string getFromUsername() const { return _from_user_name; }
-    int getFromUserID() const { return _from_user_id; }
-    int getToChatroomID() const { return _to_chatroom_id; }
-    int getFromChatroomID() const { return _from_chatroom_id; }
-    MessageType getMessageType() const { return _messageType; }
+    MockMessage() : MessageInterface() {};
+    MockMessage(MessageBuilder<MockMessage>* messageBuilder);
 
     void setMessageContents(const std::string& contents) { _messageContents = contents; }
     void setToUsername(const std::string& username) { _to_user_name = username; }
@@ -43,11 +19,9 @@ public:
     void setFromChatroomID(int id) { _from_chatroom_id = id; }
     void setMessageType(MessageType& type) { _messageType = type; }
 
-    std::vector<char> serialize() const;
-    void printMessage() const;
-
+    std::vector<char> serialize() const override;
     static MockMessage deserialize(const std::vector<char>& data);
-    static std::string messageTypeToString(const MessageType& messageType);
+    void printMessage() const override;
 };
 
 #endif 

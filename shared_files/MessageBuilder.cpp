@@ -1,6 +1,9 @@
 #include "MessageBuilder.hpp"
+#include "MessageInterface.hpp"
 #include "Message.hpp"
 #include "MockMessage.hpp"
+#include "shared_include/User.hpp"
+#include "shared_include/Chatroom.hpp"
 
 template<typename MessageObject>
 MessageBuilder<MessageObject>::MessageBuilder(MessageObject* message)

@@ -82,15 +82,26 @@ void UserManager<WorkType>::authUser(std::pair<WorkType, std::shared_ptr<tcp::so
     std::cout << "UserManager: AUTH_USER called" << std::endl;
     
     try {
-        this->_server.addFromClientSocket(work.first.getFromUserID(), work.second);
-        std::cout << "UserManager: Socket registered successfully" << std::endl;
-        
+        bool isSocketRegistered = this->_server.isClientSocketRegistered(work.first.getFromUserID());
         MessageBuilder<WorkType> responseBuilder(&work.first);
-        #ifndef _MOCK_TESTING
-        responseBuilder.setMessageContents("authUser");
-        #endif
-        WorkType responseMessage(&responseBuilder);
         
+        if (isSocketRegistered) {
+            responseBuilder.setMessageType(MessageType::DENIED);
+            #ifndef _MOCK_TESTING
+                responseBuilder.setMessageContents("authUser");
+            #endif
+        } 
+        else {
+            this->_server.addFromClientSocket(work.first.getFromUserID(), work.second);
+            std::cout << "UserManager: Socket registered successfully" << std::endl;
+            #ifndef _MOCK_TESTING
+                responseBuilder.setMessageContents("authUser");
+            #else
+                // For Non-Mock Testing, Return the User Object & the current UserMap!
+            #endif
+        }
+        
+        WorkType responseMessage(&responseBuilder);
         
         std::cout << "UserManager: Serializing authUser response..." << std::endl;
         std::vector<char> responseData = responseMessage.serialize();

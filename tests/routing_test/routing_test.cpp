@@ -93,7 +93,7 @@ protected:
             std::cout << "SEND message sent successfully" << std::endl;
 
             MockMessage authResponse = readMessageFromSocket(sendSocket);
-
+            EXPECT_NE(authResponse.getMessageType(), MessageType::DENIED);
             EXPECT_EQ(authResponse.getMessageContents(), "authUser");
             std::cout << "Auth response verified successfully" << std::endl;
 

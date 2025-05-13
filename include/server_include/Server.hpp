@@ -60,6 +60,7 @@ class Server {
         inline bool isRunning() const {return _isRunning;}
         void addFromClientSocket(int clientID, std::shared_ptr<tcp::socket> fromSocket);
         void addToClientSocket(int clientID, std::shared_ptr<tcp::socket> toSocket);
+        inline bool isClientSocketRegistered(int clientID) {return _clientSocketMap.find(clientID) != _clientSocketMap.end();}
         ClientSockets getClientSocket(int clientID);
 };
 

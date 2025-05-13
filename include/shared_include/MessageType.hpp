@@ -17,6 +17,7 @@ enum class MessageType{
     SEND, // UserManager -> authUser
     RECV, // Server->registerToClientSocket
     ACK, // Server sends to client after Server->handleClient called
+    DENIED, // Server sends to client after any denial of request
     UNDEFINED,
     TEST
 };

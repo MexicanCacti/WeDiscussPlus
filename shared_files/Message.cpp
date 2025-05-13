@@ -1,40 +1,24 @@
 #include "Message.hpp"
+#include "shared_include/User.hpp"
+#include "shared_include/Chatroom.hpp"
 
 Message::Message(MessageBuilder<Message>* messageBuilder) 
-    :   _messageContents(messageBuilder->getMessageContents()),
-        _to_user_name(messageBuilder->getToUsername()),
-        _to_user_id(messageBuilder->getToUserID()),
-        _from_user_name(messageBuilder->getFromUsername()),
-        _from_user_id(messageBuilder->getFromUserID()),
-        _to_chatroom_id(messageBuilder->getToChatroomID()),
-        _from_chatroom_id(messageBuilder->getFromChatroomID()),
-        _messageType(messageBuilder->getMessageType()) {}
-
-
-void Message::serializeInt(std::vector<char>& buffer, int val) {
-    char* p = reinterpret_cast<char*>(&val);
-    buffer.insert(buffer.end(), p, p + sizeof(int));
-}
-int  Message::deserializeInt(const std::vector<char>& buffer, size_t& offset){
-    int val;
-    std::memcpy(&val, buffer.data() + offset, sizeof(int));
-    offset += sizeof(int);
-    return val;
+    : MessageInterface() {
+    _messageContents = messageBuilder->getMessageContents();
+    _to_user_name = messageBuilder->getToUsername();
+    _to_user_id = messageBuilder->getToUserID();
+    _from_user_name = messageBuilder->getFromUsername();
+    _from_user_id = messageBuilder->getFromUserID();
+    _to_chatroom_id = messageBuilder->getToChatroomID();
+    _from_chatroom_id = messageBuilder->getFromChatroomID();
+    _messageType = messageBuilder->getMessageType();
+    _user = messageBuilder->getUser();
+    _chatroom = messageBuilder->getChatroom();
+    _chatrooms = messageBuilder->getChatrooms();
+    _userIDToUsername = messageBuilder->getUserIDToUsername();
 }
 
-void Message::serializeString(std::vector<char>& buffer, const std::string& str) {
-    serializeInt(buffer, static_cast<int>(str.length()));
-    buffer.insert(buffer.end(), str.begin(), str.end());
-}
-
-std::string  Message::deserializeString(const std::vector<char>& buffer, size_t& offset){
-    int len = deserializeInt(buffer, offset);
-    std::string result(buffer.begin() + offset, buffer.begin() + offset + len);
-    offset += len;
-    return result;
-}
-
-std::vector<char> Message::serialize() const{
+std::vector<char> Message::serialize() const {
     std::vector<char> buffer, content;
 
     serializeInt(content, static_cast<int>(_messageType));
@@ -52,11 +36,10 @@ std::vector<char> Message::serialize() const{
     return buffer;
 }
 
-Message Message::deserialize(const std::vector<char>& data){
+Message Message::deserialize(const std::vector<char>& data) {
     Message message;
     size_t offset = 0;
 
-    // Now read the actual message content
     message._messageType = static_cast<MessageType>(deserializeInt(data, offset));
     message._from_user_id = deserializeInt(data, offset);
     message._to_user_id = deserializeInt(data, offset);
@@ -70,49 +53,6 @@ Message Message::deserialize(const std::vector<char>& data){
     return message;
 }
 
-std::string Message::messageTypeToString(const MessageType& messageType){
-    switch(messageType){
-        case MessageType::LOGOUT:
-            return "LOGOUT";
-        case MessageType::ADD_USER:
-            return "ADD_USER";
-        case MessageType::CHANGE_USER_PASSWORD:
-            return "CHANGE_USER_PASSWORD";
-        case MessageType::CHANGE_USER_NAME:
-            return "CHANGE_USER_NAME";
-        case MessageType::DELETE_USER:
-            return "DELETE_USER";
-        case MessageType::SEND_MESSAGE_TO_USER:
-            return "SEND_MESSAGE_TO_USER";
-        case MessageType::CREATE_CHATROOM:
-            return "CREATE_CHATROOM";
-        case MessageType::DELETE_CHATROOM:
-            return "DELETE_CHATROOM";
-        case MessageType::ADD_USER_TO_CHATROOM:
-            return "ADD_USER_TO_CHATROOM";
-        case MessageType::SEND_MESSAGE_TO_CHATROOM:
-            return "SEND_MESSAGE_TO_CHATROOM";
-        case MessageType::REMOVE_USER_FROM_CHATROOM:
-            return "REMOVE_USER_FROM_CHATROOM";
-        case MessageType::GET_USER_MESSAGES:
-            return "GET_USER_MESSAGES";
-        case MessageType::GET_CHATROOM_MESSAGES:
-            return "GET_CHATROOM_MESSAGES";
-        case MessageType::SEND:
-            return "SEND";
-        case MessageType::RECV:
-            return "RECV";
-        case MessageType::ACK:
-            return "ACK";
-        case MessageType::UNDEFINED:
-            return "UNDEFINED";
-        case MessageType::TEST:
-            return "TEST";
-        default:
-            return "UNKNOWN";
-    }
-}
-
-void Message::printMessage() const{
+void Message::printMessage() const {
     std::cout << "Message Type: " << messageTypeToString(_messageType) << " Contents: " << _messageContents << std::endl;
 }
