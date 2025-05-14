@@ -50,7 +50,7 @@ void sendMessages(tcp::socket& sendSocket, int clientID) {
 int main() {
     asio::io_context context;
     tcp::resolver resolver(context);
-    auto endpoints = resolver.resolve("127.0.0.1", "333");
+    auto endpoints = resolver.resolve("127.0.0.1", "3333");
 
     int clientID = 42;  // Use any unique ID
 
@@ -71,6 +71,7 @@ int main() {
     if (connectMessage.getMessageType() == MessageType::CONNECT) {
         std::cout << "Received CONNECT message from server:\n";
         connectMessage.printMessage();
+        clientID = connectMessage.getFromUserID();
     } else {
         std::cerr << "Expected CONNECT message, got something else.\n";
     }
@@ -93,6 +94,7 @@ int main() {
     Message ack = receiveMessage(recvSocket);
     if (ack.getMessageType() == MessageType::AUTHENTICATE) {
         std::cout << "Received AUTHENTICATE from server:\n";
+        clientID = ack.getFromUserID();
         ack.printMessage();
     } else {
         std::cerr << "Expected AUTHENTICATE, got something else.\n";

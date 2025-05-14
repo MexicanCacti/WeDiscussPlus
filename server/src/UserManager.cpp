@@ -80,6 +80,8 @@ void UserManager<WorkType>::authUser(WorkType& work){
             throw std::runtime_error("Socket(s) not registered");
         }
         
+        int userID = tempID;
+
         // TODO: Authenticate user, add init data to message (tack on UserObject, etc.)
         // 1. Get real clientID from authentication
         // 2. Start client handler thread with real clientID
@@ -89,12 +91,12 @@ void UserManager<WorkType>::authUser(WorkType& work){
 
         // Start client handler thread before any response handling
         // Only start the thread if it hasn't been started yet
-        if (_clientHandlerStarted.find(tempID) == _clientHandlerStarted.end()) {
-            std::thread clientThread([this, tempID](){
-                this->_server.handleClient(tempID);
+        if (_clientHandlerStarted.find(userID) == _clientHandlerStarted.end()) {
+            std::thread clientThread([this, userID](){
+                this->_server.handleClient(userID);
             });
             clientThread.detach();
-            _clientHandlerStarted[tempID] = true;
+            _clientHandlerStarted[userID] = true;
         }
         
         #ifdef _MOCK_TESTING
@@ -110,9 +112,9 @@ void UserManager<WorkType>::authUser(WorkType& work){
 
         responseBuilder.setSuccessBit(true);
         responseBuilder.setMessageContents("authUser");
-        responseBuilder.setFromUserID(tempID);  // Set the fromUserID to match the tempID
+        responseBuilder.setFromUserID(userID);  // Set the fromUserID to match the tempID
         WorkType responseMessage(&responseBuilder);
-        this->_server.sendMessageToClient(tempID, responseMessage);
+        this->_server.sendMessageToClient(userID, responseMessage);
         
         // Only remove tempID mapping after sockets are moved to real clientID
         // this->_server.removeClientSocket(tempID);  // Commented out until socket migration is implemented
