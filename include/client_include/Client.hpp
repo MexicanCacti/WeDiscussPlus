@@ -11,13 +11,14 @@ using asio::ip::tcp;
 class Client {
     private:
         asio::io_context _ioContext;
-        tcp::socket _socket;
+        tcp::socket sendSocket;
+        tcp::socket receiveSocket;
 
     public:
         Client(const std::string& host, int port);
         void start();
-        void sendMessage(const Message& message);
-        Message readMessage();
+        void sendMessage(const Message& message, tcp::socket& socket);
+        Message readMessage(tcp::socket& socket);
 };
 
 #endif

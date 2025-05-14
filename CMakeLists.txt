@@ -54,7 +54,7 @@ endif()
 add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(demo_client)
-add_subdirectory(demo_server)
+#add_subdirectory(demo_server)
 add_subdirectory(tests)
 
 #Private: Only files in project need the library/include

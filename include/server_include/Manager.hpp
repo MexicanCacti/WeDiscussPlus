@@ -24,20 +24,20 @@ class ManagerInterface {
         virtual ~ManagerInterface() = default;
         virtual void handleClient() = 0;
         inline void stop() {_shouldDoWork = false;}
-        virtual size_t getQueueSize() const = 0;
+        virtual size_t getQueueSize() = 0;
         virtual void setUpDatabaseConnection() = 0;
 };
 
 template<typename WorkType>
 class Manager : public ManagerInterface<WorkType> {
     protected:
-        std::queue<std::pair<WorkType, std::shared_ptr<tcp::socket>>> _processQueue;
-        virtual void processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) = 0;
+        std::queue<WorkType> _processQueue;
+        virtual void processWork(WorkType& work) = 0;
     public:
         Manager(Server<WorkType>& server) : ManagerInterface<WorkType>(server) {}
-        void addWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void addWork(WorkType& work);
         void handleClient() override;
-        inline size_t getQueueSize() const override {return _processQueue.size();}
+        size_t getQueueSize() override;
         virtual void setUpDatabaseConnection() override = 0;
 };
 

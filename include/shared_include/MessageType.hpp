@@ -1,6 +1,8 @@
 #pragma once
 
 enum class MessageType{
+    CONNECT, // Client->Server Initiates connection, Server->Client Connection Success
+    AUTHENTICATE, // Client->Server Authenticates user, Server->Client Authentication Success
     LOGOUT, // UserManager->logoutUser
     ADD_USER, // UserManager->addUser
     CHANGE_USER_PASSWORD, // UserManager->changeUserPassword
@@ -14,10 +16,7 @@ enum class MessageType{
     REMOVE_USER_FROM_CHATROOM, // ChatroomManager->removeUserFromChatroom
     GET_USER_MESSAGES, // LogManager->answerLogRequest
     GET_CHATROOM_MESSAGES, // LogManager->answerLogRequest
-    SEND, // UserManager -> authUser
-    RECV, // Server->registerToClientSocket
-    ACK, // Server sends to client after Server->handleClient called
-    DENIED, // Server sends to client after any denial of request
+    STORE_MESSAGE, // LogManager->storeMessage
     UNDEFINED,
     TEST
 };

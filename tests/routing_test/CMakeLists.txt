@@ -8,6 +8,13 @@ set_target_properties(routing_test PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${ROUTING_TEST_OUTPUT_DIR}
 )
 
+# Define _MOCK_TESTING for both the test and the server library
+add_definitions(-D_DEBUG)
+target_compile_definitions(server PRIVATE _DEBUG)
+add_definitions(-D_MOCK_TESTING)
+target_compile_definitions(server PRIVATE _MOCK_TESTING)
+
+
 target_link_libraries(routing_test PRIVATE 
     core 
     GTest::gtest_main
@@ -21,8 +28,6 @@ target_include_directories(routing_test PRIVATE
     ${CMAKE_SOURCE_DIR}/tests/mock_objects
     ${CMAKE_SOURCE_DIR}/tests
 )
-
-target_compile_definitions(routing_test PRIVATE _DEBUG _MOCK_TESTING)
 
 include(GoogleTest)
 gtest_discover_tests(routing_test)

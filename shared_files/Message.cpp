@@ -4,6 +4,7 @@
 
 Message::Message(MessageBuilder<Message>* messageBuilder) 
     : MessageInterface() {
+    _success_bit = messageBuilder->getSuccessBit();
     _messageContents = messageBuilder->getMessageContents();
     _to_user_name = messageBuilder->getToUsername();
     _to_user_id = messageBuilder->getToUserID();
@@ -21,6 +22,7 @@ Message::Message(MessageBuilder<Message>* messageBuilder)
 std::vector<char> Message::serialize() const {
     std::vector<char> buffer, content;
 
+    serializeInt(content, _success_bit);
     serializeInt(content, static_cast<int>(_messageType));
     serializeInt(content, _from_user_id);
     serializeInt(content, _to_user_id);
@@ -40,6 +42,7 @@ Message Message::deserialize(const std::vector<char>& data) {
     Message message;
     size_t offset = 0;
 
+    message._success_bit = deserializeInt(data, offset);
     message._messageType = static_cast<MessageType>(deserializeInt(data, offset));
     message._from_user_id = deserializeInt(data, offset);
     message._to_user_id = deserializeInt(data, offset);

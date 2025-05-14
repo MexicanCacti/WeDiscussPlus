@@ -7,6 +7,7 @@
 
 class MessageInterface {
 protected:
+    bool _success_bit;
     std::string _messageContents;
     std::string _to_user_name;
     int _to_user_id;
@@ -23,6 +24,7 @@ protected:
 
 public:
     MessageInterface() : 
+        _success_bit(true),
         _messageContents(""), 
         _to_user_name(""), 
         _to_user_id(-1), 
@@ -34,6 +36,7 @@ public:
 
     virtual ~MessageInterface() = default;
 
+    inline bool getSuccessBit() const { return _success_bit; }
     inline std::string getMessageContents() const { return _messageContents; }
     inline std::string getToUsername() const { return _to_user_name; }
     inline int getToUserID() const { return _to_user_id; }

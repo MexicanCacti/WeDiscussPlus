@@ -13,6 +13,11 @@ target_include_directories(server PUBLIC
     ${CMAKE_SOURCE_DIR}/libs/asio-1.30.2/include
 )
 
+# Propagate _MOCK_TESTING flag if it's defined
+if(DEFINED _MOCK_TESTING)
+    target_compile_definitions(server PRIVATE _MOCK_TESTING)
+endif()
+
 add_executable(WeDiscussServer main.cpp)
 target_link_libraries(WeDiscussServer PRIVATE server)
 

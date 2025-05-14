@@ -20,10 +20,11 @@ void LoadBalancer<WorkType>::addManager(int id, std::shared_ptr<Manager<WorkType
             std::cerr << "Manager thread exception: " << e.what() << std::endl;
         }
     });
+    _managerThreads[id].detach();
 }
 
 template<typename WorkType>
-void LoadBalancer<WorkType>::findBestManager(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+void LoadBalancer<WorkType>::findBestManager(WorkType& work){
     int bestManagerID = -1;
     size_t minQueueSize = SIZE_MAX;
 
@@ -41,7 +42,7 @@ void LoadBalancer<WorkType>::findBestManager(std::pair<WorkType, std::shared_ptr
 }
 
 template<typename WorkType>
-void LoadBalancer<WorkType>::assignWork(int managerID, std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
+void LoadBalancer<WorkType>::assignWork(int managerID, WorkType& work){
     auto it = _managers.find(managerID);
     if(it != _managers.end()){
         it->second->addWork(work);
@@ -49,7 +50,13 @@ void LoadBalancer<WorkType>::assignWork(int managerID, std::pair<WorkType, std::
 }
 
 template<typename WorkType>
-void LoadBalancer<WorkType>::pushWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>&& work){
+void LoadBalancer<WorkType>::pushWork(WorkType& work){
+    std::lock_guard<std::mutex> queueLock(_workQueueMutex);
+    _workQueue.push(work);
+}
+
+template<typename WorkType>
+void LoadBalancer<WorkType>::pushWork(WorkType&& work){
     std::lock_guard<std::mutex> queueLock(_workQueueMutex);
     _workQueue.push(std::move(work));
 }

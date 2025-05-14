@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
                 }
             } catch (const std::exception& e) {
                 std::cerr << "Invalid input! Using default port: " << defaultPort << std::endl;
+                std::cerr << "Error: " << e.what() << std::endl;
                 port = defaultPort;
             }
         }

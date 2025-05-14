@@ -2,7 +2,7 @@
 #include <cstring>
 
 void MessageInterface::serializeInt(std::vector<char>& buffer, int val) {
-    char* p = reinterpret_cast<char*>(&val);
+    char* p = reinterpret_cast<char*>(&val); // Geting ptr to first byte of the val
     buffer.insert(buffer.end(), p, p + sizeof(int));
 }
 
@@ -27,6 +27,10 @@ std::string MessageInterface::deserializeString(const std::vector<char>& buffer,
 
 std::string MessageInterface::messageTypeToString(const MessageType& messageType) {
     switch(messageType) {
+        case MessageType::CONNECT:
+            return "CONNECT";
+        case MessageType::AUTHENTICATE:
+            return "AUTHENTICATE";
         case MessageType::LOGOUT:
             return "LOGOUT";
         case MessageType::ADD_USER:
@@ -53,18 +57,12 @@ std::string MessageInterface::messageTypeToString(const MessageType& messageType
             return "GET_USER_MESSAGES";
         case MessageType::GET_CHATROOM_MESSAGES:
             return "GET_CHATROOM_MESSAGES";
-        case MessageType::SEND:
-            return "SEND";
-        case MessageType::RECV:
-            return "RECV";
-        case MessageType::ACK:
-            return "ACK";
+        case MessageType::STORE_MESSAGE:
+            return "STORE_MESSAGE";
         case MessageType::UNDEFINED:
             return "UNDEFINED";
         case MessageType::TEST:
             return "TEST";
-        case MessageType::DENIED:
-            return "DENIED";
         default:
             return "UNKNOWN";
     }

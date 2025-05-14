@@ -1,244 +1,353 @@
 #include "UserManager.hpp"
 #include "Server.hpp"
+#include <iostream>
 
 template<typename WorkType>
-std::unordered_map<int, User> UserManager<WorkType>::_userMap;
-
-template<typename WorkType>
-std::unordered_map<int, std::string> UserManager<WorkType>::_userIDToName;
-
-template<typename WorkType>
-std::unordered_map<std::string, int> UserManager<WorkType>::_usernameToID;
-
-template<typename WorkType>
-void UserManager<WorkType>::setUpDatabaseConnection() {
-    // Set up connection to database & set up maps!
+void UserManager<WorkType>::setUpDatabaseConnection(){
+    try {
+        // TODO: Implement database connection setup
+    } catch (const std::exception& e) {
+        std::cerr << "Error in setUpDatabaseConnection: " << e.what() << std::endl;
+    }
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) {
-    #ifdef _DEBUG
-    std::cout << "UserManager processing message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
-    #endif
-            
+void UserManager<WorkType>::processWork(WorkType& work) {
     try {
-        switch(work.first.getMessageType()){
-            case MessageType::SEND:
+        switch(work.getMessageType()) {
+            case MessageType::AUTHENTICATE:
                 #ifdef _DEBUG
-                std::cout << "Processing SEND message" << std::endl;
+                    std::cout << "Processing authenticate work" << std::endl;
                 #endif
                 authUser(work);
                 break;
             case MessageType::LOGOUT:
                 #ifdef _DEBUG
-                std::cout << "Processing LOGOUT message" << std::endl;
+                    std::cout << "Processing logout work" << std::endl;
                 #endif
                 logoutUser(work);
                 break;
             case MessageType::ADD_USER:
                 #ifdef _DEBUG
-                std::cout << "Processing ADD_USER message" << std::endl;
+                    std::cout << "Processing add user work" << std::endl;
                 #endif
                 addUser(work);
                 break;
             case MessageType::CHANGE_USER_PASSWORD:
                 #ifdef _DEBUG
-                std::cout << "Processing CHANGE_USER_PASSWORD message" << std::endl;
+                    std::cout << "Processing change user password work" << std::endl;
                 #endif
                 changeUserPassword(work);
                 break;
             case MessageType::CHANGE_USER_NAME:
                 #ifdef _DEBUG
-                std::cout << "Processing CHANGE_USER_NAME message" << std::endl;
+                    std::cout << "Processing change user name work" << std::endl;
                 #endif
                 changeUserName(work);
                 break;
             case MessageType::DELETE_USER:
                 #ifdef _DEBUG
-                std::cout << "Processing DELETE_USER message" << std::endl;
+                    std::cout << "Processing delete user work" << std::endl;
                 #endif
                 deleteUser(work);
                 break;
             case MessageType::SEND_MESSAGE_TO_USER:
                 #ifdef _DEBUG
-                std::cout << "Processing SEND_MESSAGE_TO_USER message" << std::endl;
+                    std::cout << "Processing send message to user work" << std::endl;
                 #endif
                 sendMessageToUser(work);
                 break;
             default:
                 #ifdef _DEBUG
-                std::cout << "Unknown message type: " << Message::messageTypeToString(work.first.getMessageType()) << std::endl;
+                    std::cerr << "Unknown message type: " << Message::messageTypeToString(work.getMessageType()) << std::endl;
                 #endif
                 break;
         }
-    } catch (const std::exception& e) {
-        std::cerr << "Error in processWork: " << e.what() << std::endl;
-        throw;
     }
-}      
+    catch(const std::exception& e) {
+        std::cerr << "Error processing work: " << e.what() << std::endl;
+    }
+}
 
 template<typename WorkType>
-void UserManager<WorkType>::authUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    std::cout << "UserManager: AUTH_USER called" << std::endl;
-    
+void UserManager<WorkType>::authUser(WorkType& work){
+    MessageBuilder<WorkType> responseBuilder(&work);
+    int tempID = work.getFromUserID();
     try {
-        bool isSocketRegistered = this->_server.isClientSocketRegistered(work.first.getFromUserID());
-        MessageBuilder<WorkType> responseBuilder(&work.first);
-        
-        if (isSocketRegistered) {
-            responseBuilder.setMessageType(MessageType::DENIED);
-            #ifndef _MOCK_TESTING
-                responseBuilder.setMessageContents("authUser");
-            #endif
-        } 
-        else {
-            this->_server.addFromClientSocket(work.first.getFromUserID(), work.second);
-            std::cout << "UserManager: Socket registered successfully" << std::endl;
-            #ifndef _MOCK_TESTING
-                responseBuilder.setMessageContents("authUser");
-            #else
-                // For Non-Mock Testing, Return the User Object & the current UserMap!
-            #endif
+        bool areSocketsRegistered = (this->_server.isToClientSocketRegistered(tempID) && this->_server.isFromClientSocketRegistered(tempID));
+        if(!areSocketsRegistered) {
+            std::cerr << "Socket registration check failed for client " << tempID << std::endl;
+            throw std::runtime_error("Socket(s) not registered");
         }
         
-        WorkType responseMessage(&responseBuilder);
+        // TODO: Authenticate user, add init data to message (tack on UserObject, etc.)
+        // 1. Get real clientID from authentication
+        // 2. Start client handler thread with real clientID
+        // 3. Move sockets from tempID to clientID mapping
+        // 4. Send response to client with real clientID
+        // 5. Remove tempID mapping
+
+        // Start client handler thread before any response handling
+        // Only start the thread if it hasn't been started yet
+        if (_clientHandlerStarted.find(tempID) == _clientHandlerStarted.end()) {
+            std::thread clientThread([this, tempID](){
+                this->_server.handleClient(tempID);
+            });
+            clientThread.detach();
+            _clientHandlerStarted[tempID] = true;
+        }
         
-        std::cout << "UserManager: Serializing authUser response..." << std::endl;
-        std::vector<char> responseData = responseMessage.serialize();
-        std::cout << "UserManager: Sending authUser response..." << std::endl;
-        asio::write(*work.second, asio::buffer(responseData));
-        std::cout << "UserManager: Sent authUser response successfully" << std::endl;
+        #ifdef _MOCK_TESTING
+            responseBuilder.setMessageContents("authUser");
+            responseBuilder.setSuccessBit(true);
+            responseBuilder.setFromUserID(tempID); 
+            WorkType mockMessage(&responseBuilder);
+            std::cout << "Sending mock message to client " << tempID << std::endl;
+            this->_server.sendMessageToClient(tempID, mockMessage);
+            // Don't remove socket in mock testing, tempID is the real clientID
+            return;
+        #endif
+
+        responseBuilder.setSuccessBit(true);
+        responseBuilder.setMessageContents("authUser");
+        responseBuilder.setFromUserID(tempID);  // Set the fromUserID to match the tempID
+        WorkType responseMessage(&responseBuilder);
+        this->_server.sendMessageToClient(tempID, responseMessage);
+        
+        // Only remove tempID mapping after sockets are moved to real clientID
+        // this->_server.removeClientSocket(tempID);  // Commented out until socket migration is implemented
     } catch (const std::exception& e) {
         std::cerr << "Error in authUser: " << e.what() << std::endl;
+        try {
+            responseBuilder.setSuccessBit(false);
+            responseBuilder.setMessageContents("authUser");
+            responseBuilder.setFromUserID(tempID);  // Set the fromUserID to match the tempID
+            WorkType failedMessage(&responseBuilder);
+            this->_server.sendMessageToClient(tempID, failedMessage);
+            // Only remove socket after sending error response
+            this->_server.removeClientSocket(tempID);
+        } catch (const std::exception& e2) {
+            std::cerr << "Error sending error response: " << e2.what() << std::endl;
+            // If we can't send the error response, still try to clean up the socket
+            this->_server.removeClientSocket(tempID);
+        }
         throw;
     }
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::logoutUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    std::cout << "UserManager: LOGOUT called" << std::endl;
+void UserManager<WorkType>::logoutUser(WorkType& work){
+    #ifdef _DEBUG
+        std::cout << "Logging out user " << work.getFromUserID() << std::endl;
+    #endif
+    MessageBuilder<WorkType> responseBuilder(&work);
+    int userID = work.getFromUserID();
     try {
-        MessageBuilder<WorkType> responseBuilder(&work.first);
-        #ifndef _MOCK_TESTING
-        responseBuilder.setMessageContents("logoutUser");
+        #ifdef _MOCK_TESTING
+            std::cout << "Entering mock testing block for user " << userID << std::endl;
+            responseBuilder.setMessageContents("logoutUser");
+            responseBuilder.setSuccessBit(true);
+            responseBuilder.setFromUserID(userID);
+            WorkType mockMessage(&responseBuilder);
+            #ifdef _DEBUG
+                std::cout << "Sending mock logout response to client " << userID << std::endl;
+            #endif
+            this->_server.sendMessageToClient(userID, mockMessage);
+            #ifdef _DEBUG
+                std::cout << "Mock logout response sent successfully" << std::endl;
+            #endif
+            return;
         #endif
+        // TODO: Implement logout logic
+        responseBuilder.setMessageContents("logoutUser");
+        responseBuilder.setSuccessBit(true);
         WorkType responseMessage(&responseBuilder);
-        
-        std::cout << "UserManager: Serializing logoutUser response..." << std::endl;
-        std::vector<char> responseData = responseMessage.serialize();
-        std::cout << "UserManager: Sending logoutUser response..." << std::endl;
-        asio::write(*work.second, asio::buffer(responseData));
-        std::cout << "UserManager: Sent logoutUser response successfully" << std::endl;
+        this->_server.sendMessageToClient(userID, responseMessage);
+        this->_server.removeClientSocket(userID);
+        _clientHandlerStarted.erase(userID);
     } catch (const std::exception& e) {
         std::cerr << "Error in logoutUser: " << e.what() << std::endl;
-        throw;
+        try {
+            responseBuilder.setSuccessBit(false);
+            responseBuilder.setMessageContents("logoutUser");
+            WorkType failedMessage(&responseBuilder);
+            this->_server.sendMessageToClient(userID, failedMessage);
+        } catch (const std::exception& e2) {
+            std::cerr << "Error sending error response: " << e2.what() << std::endl;
+        }
+        this->_server.removeClientSocket(userID);
+        // Clean up client handler even if there's an error
+        _clientHandlerStarted.erase(userID);
     }
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::addUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    std::cout << "UserManager: ADD_USER called" << std::endl;
+void UserManager<WorkType>::addUser(WorkType& work){
+    MessageBuilder<WorkType> responseBuilder(&work);
+    int userID = work.getFromUserID();
     try {
-        MessageBuilder<WorkType> responseBuilder(&work.first);
-        #ifndef _MOCK_TESTING
-        responseBuilder.setMessageContents("addUser");
+        #ifdef _MOCK_TESTING
+            responseBuilder.setMessageContents("addUser");
+            responseBuilder.setSuccessBit(true);
+            WorkType mockMessage(&responseBuilder);
+            this->_server.sendMessageToClient(userID, mockMessage);
+            return;
         #endif
-        WorkType responseMessage(&responseBuilder);
+        // TODO: Implement addUser logic
         
-        std::cout << "UserManager: Serializing addUser response..." << std::endl;
-        std::vector<char> responseData = responseMessage.serialize();
-        std::cout << "UserManager: Sending addUser response..." << std::endl;
-        asio::write(*work.second, asio::buffer(responseData));
-        std::cout << "UserManager: Sent addUser response successfully" << std::endl;
+        responseBuilder.setSuccessBit(true);
+        responseBuilder.setMessageContents("addUser");
+        WorkType responseMessage(&responseBuilder);
+        this->_server.sendMessageToClient(userID, responseMessage);
     } catch (const std::exception& e) {
         std::cerr << "Error in addUser: " << e.what() << std::endl;
+        MessageBuilder<WorkType> responseBuilder(&work);
+        responseBuilder.setSuccessBit(false);
+        responseBuilder.setMessageContents("addUser");
+        WorkType failedMessage(&responseBuilder);
+        this->_server.sendMessageToClient(userID, failedMessage);
         throw;
     }
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::changeUserPassword(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    std::cout << "UserManager: CHANGE_USER_PASSWORD called" << std::endl;
+void UserManager<WorkType>::changeUserPassword(WorkType& work){
+    MessageBuilder<WorkType> responseBuilder(&work);
+    int userID = work.getFromUserID();
     try {
-        MessageBuilder<WorkType> responseBuilder(&work.first);
-        #ifndef _MOCK_TESTING
-        responseBuilder.setMessageContents("changeUserPassword");
+        #ifdef _MOCK_TESTING
+            responseBuilder.setMessageContents("changeUserPassword");
+            responseBuilder.setSuccessBit(true);
+            WorkType mockMessage(&responseBuilder);
+            this->_server.sendMessageToClient(userID, mockMessage);
+            return;
         #endif
+        // TODO: Implement changeUserPassword logic
+        responseBuilder.setSuccessBit(true);
+        responseBuilder.setMessageContents("changeUserPassword");
         WorkType responseMessage(&responseBuilder);
-        
-        std::cout << "UserManager: Serializing changeUserPassword response..." << std::endl;
-        std::vector<char> responseData = responseMessage.serialize();
-        std::cout << "UserManager: Sending changeUserPassword response..." << std::endl;
-        asio::write(*work.second, asio::buffer(responseData));
-        std::cout << "UserManager: Sent changeUserPassword response successfully" << std::endl;
+        this->_server.sendMessageToClient(userID, responseMessage);
     } catch (const std::exception& e) {
         std::cerr << "Error in changeUserPassword: " << e.what() << std::endl;
+        MessageBuilder<WorkType> responseBuilder(&work);
+        responseBuilder.setSuccessBit(false);
+        responseBuilder.setMessageContents("changeUserPassword");
+        WorkType failedMessage(&responseBuilder);
+        this->_server.sendMessageToClient(userID, failedMessage);
         throw;
     }
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::changeUserName(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    std::cout << "UserManager: CHANGE_USER_NAME called" << std::endl;
+void UserManager<WorkType>::changeUserName(WorkType& work){
+    MessageBuilder<WorkType> responseBuilder(&work);
+    int userID = work.getFromUserID();
     try {
-        MessageBuilder<WorkType> responseBuilder(&work.first);
-        #ifndef _MOCK_TESTING
-        responseBuilder.setMessageContents("changeUserName");
+        #ifdef _MOCK_TESTING
+            responseBuilder.setMessageContents("changeUserName");
+            responseBuilder.setSuccessBit(true);
+            WorkType mockMessage(&responseBuilder);
+            this->_server.sendMessageToClient(userID, mockMessage);
+            return;
         #endif
+        // TODO: Implement changeUserName logic
+        responseBuilder.setSuccessBit(true);
+        responseBuilder.setMessageContents("changeUserName");
         WorkType responseMessage(&responseBuilder);
-        
-        std::cout << "UserManager: Serializing changeUserName response..." << std::endl;
-        std::vector<char> responseData = responseMessage.serialize();
-        std::cout << "UserManager: Sending changeUserName response..." << std::endl;
-        asio::write(*work.second, asio::buffer(responseData));
-        std::cout << "UserManager: Sent changeUserName response successfully" << std::endl;
+        this->_server.sendMessageToClient(userID, responseMessage);
     } catch (const std::exception& e) {
         std::cerr << "Error in changeUserName: " << e.what() << std::endl;
+        MessageBuilder<WorkType> responseBuilder(&work);
+        responseBuilder.setSuccessBit(false);
+        responseBuilder.setMessageContents("changeUserName");
+        WorkType failedMessage(&responseBuilder);
+        this->_server.sendMessageToClient(userID, failedMessage);
         throw;
     }
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::deleteUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    std::cout << "UserManager: DELETE_USER called" << std::endl;
+void UserManager<WorkType>::deleteUser(WorkType& work){
+    MessageBuilder<WorkType> responseBuilder(&work);
+    int userID = work.getFromUserID();
     try {
-        MessageBuilder<WorkType> responseBuilder(&work.first);
-        #ifndef _MOCK_TESTING
-        responseBuilder.setMessageContents("deleteUser");
+        #ifdef _MOCK_TESTING
+            responseBuilder.setMessageContents("deleteUser");
+            responseBuilder.setSuccessBit(true);
+            WorkType mockMessage(&responseBuilder);
+            this->_server.sendMessageToClient(userID, mockMessage);
+            return;
         #endif
+        // TODO: Implement deleteUser logic... Remove from database, force logout if necessary.
+        responseBuilder.setSuccessBit(true);
+        responseBuilder.setMessageContents("deleteUser");
         WorkType responseMessage(&responseBuilder);
-        
-        std::cout << "UserManager: Serializing deleteUser response..." << std::endl;
-        std::vector<char> responseData = responseMessage.serialize();
-        std::cout << "UserManager: Sending deleteUser response..." << std::endl;
-        asio::write(*work.second, asio::buffer(responseData));
-        std::cout << "UserManager: Sent deleteUser response successfully" << std::endl;
+        this->_server.sendMessageToClient(userID, responseMessage);
     } catch (const std::exception& e) {
         std::cerr << "Error in deleteUser: " << e.what() << std::endl;
+        MessageBuilder<WorkType> responseBuilder(&work);
+        responseBuilder.setSuccessBit(false);
+        responseBuilder.setMessageContents("deleteUser");
+        WorkType failedMessage(&responseBuilder);
+        this->_server.sendMessageToClient(userID, failedMessage);
         throw;
     }
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::sendMessageToUser(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work){
-    std::cout << "UserManager: SEND_MESSAGE_TO_USER called" << std::endl;
+void UserManager<WorkType>::sendMessageToUser(WorkType& work){
+    MessageBuilder<WorkType> responseBuilder(&work);
+    int userID = work.getFromUserID();
     try {
-        MessageBuilder<WorkType> responseBuilder(&work.first);
-        #ifndef _MOCK_TESTING
-        responseBuilder.setMessageContents("sendMessageToUser");
+        #ifdef _MOCK_TESTING
+            responseBuilder.setMessageContents("sendMessageToUser");
+            responseBuilder.setSuccessBit(true);
+            WorkType mockMessage(&responseBuilder);
+            this->_server.sendMessageToClient(userID, mockMessage);
+            return;
         #endif
+        // TODO: Implement sendMessageToUser logic
+        responseBuilder.setSuccessBit(true);
+        responseBuilder.setMessageContents("sendMessageToUser");
         WorkType responseMessage(&responseBuilder);
-        
-        std::cout << "UserManager: Serializing sendMessageToUser response..." << std::endl;
-        std::vector<char> responseData = responseMessage.serialize();
-        std::cout << "UserManager: Sending sendMessageToUser response..." << std::endl;
-        asio::write(*work.second, asio::buffer(responseData));
-        std::cout << "UserManager: Sent sendMessageToUser response successfully" << std::endl;
+        this->_server.sendMessageToClient(userID, responseMessage);   
     } catch (const std::exception& e) {
         std::cerr << "Error in sendMessageToUser: " << e.what() << std::endl;
+        responseBuilder.setSuccessBit(false);
+        responseBuilder.setMessageContents("sendMessageToUser");
+        WorkType failedMessage(&responseBuilder);
+        this->_server.sendMessageToClient(userID, failedMessage);
         throw;
     }
 }
 
+/*
+template<typename WorkType>
+std::optional<std::mutex&> UserManager<WorkType>::getUserMutex(int userID) {
+    std::shared_lock<std::shared_mutex> lock(_userMapMutex);
+    auto it = _userMap.find(userID);
+    if (it != _userMap.end()) {
+        return std::ref(it->second.getMutex());
+    }
+    return std::nullopt;
+}
+
+template<typename WorkType>
+bool UserManager<WorkType>::addUserMutex(int userID) {
+    std::unique_lock<std::shared_mutex> lock(_userMapMutex);
+    auto it = _userMap.find(userID);
+    if (it != _userMap.end()) {
+        return false;
+    }
+    _userMap[userID] = User();
+    return true;
+}
+
+template<typename WorkType>
+bool UserManager<WorkType>::removeUserMutex(int userID) {
+    std::unique_lock<std::shared_mutex> lock(_userMapMutex);
+    return _userMap.erase(userID) > 0;
+}
+*/
 template class UserManager<Message>;
 template class UserManager<MockMessage>;

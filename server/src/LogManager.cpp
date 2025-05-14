@@ -9,89 +9,99 @@ void LogManager<WorkType>::setUpDatabaseConnection(){
 }
 
 template<typename WorkType>
-void LogManager<WorkType>::processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) {
-    #ifdef _DEBUG
-    std::cout << "LogManager processing message type: " << WorkType::messageTypeToString(work.first.getMessageType()) << std::endl;
-    #endif
+void LogManager<WorkType>::processWork(WorkType& work) {
+    try{
+        #ifdef _DEBUG   
+            std::cout << "LogManager processing message type: " << WorkType::messageTypeToString(work.getMessageType()) << std::endl;
+        #endif
             
-    switch(work.first.getMessageType()){
-        case MessageType::GET_USER_MESSAGES:
-        case MessageType::GET_CHATROOM_MESSAGES:
-            answerLogRequest(work);
-            break;
-        default:
-            #ifdef _DEBUG
-            std::cout << "Unknown message type: " << WorkType::messageTypeToString(work.first.getMessageType()) << std::endl;
-            #endif
-            break;
+        switch(work.getMessageType()){
+            case MessageType::GET_USER_MESSAGES:
+            case MessageType::GET_CHATROOM_MESSAGES:
+                answerLogRequest(work);
+                break;
+            default:
+                storeMessage(work);
+                break;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error in processWork: " << e.what() << std::endl;
+        throw;
     }
 }   
 
 template<typename WorkType>
 void LogManager<WorkType>::getUserMessages(int userID) {
-    #ifdef _DEBUG
-        std::cout << "LogManager: GET_USER_MESSAGES called for userID: " << userID << std::endl;
-    #endif
+    try{
+        // TODO: Get user messages from database
+    } catch (const std::exception& e) {
+        std::cerr << "Error in getUserMessages: " << e.what() << std::endl;
+        throw;
+    }
 }
 
 template<typename WorkType>
 void LogManager<WorkType>::getChatroomMessages(int chatroomID) {
-    #ifdef _DEBUG
-        std::cout << "LogManager: GET_CHATROOM_MESSAGES called for chatroomID: " << chatroomID << std::endl;
-    #endif
+    try{
+        // TODO: Get chatroom messages from database
+    } catch (const std::exception& e) {
+        std::cerr << "Error in getChatroomMessages: " << e.what() << std::endl;
+        throw;
+    }
 }
 
 template<typename WorkType>
-void LogManager<WorkType>::answerLogRequest(std::pair<WorkType, std::shared_ptr<tcp::socket>>& message) {
-    switch(message.first.getMessageType()){
-        case MessageType::GET_USER_MESSAGES:
-            getUserMessages(message.first.getToUserID());
-            try {
-                MessageBuilder<WorkType> responseBuilder(&message.first);
-                #ifndef _MOCK_TESTING
-                responseBuilder.setMessageContents("getUserMessages");
-                #endif
-                WorkType responseMessage(&responseBuilder);
-                
-                std::cout << "LogManager: Serializing getUserMessages response..." << std::endl;
-                std::vector<char> responseData = responseMessage.serialize();
-                std::cout << "LogManager: Sending getUserMessages response..." << std::endl;
-                asio::write(*message.second, asio::buffer(responseData));
-                std::cout << "LogManager: Sent getUserMessages response successfully" << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "Error in getUserMessages response: " << e.what() << std::endl;
-                throw;
+void LogManager<WorkType>::answerLogRequest(WorkType& message) {
+    MessageBuilder<WorkType> responseBuilder(&message);
+    try{
+        #ifdef _MOCK_TESTING
+        {
+            std::string responseContent;
+            switch(message.getMessageType()){
+                case MessageType::GET_USER_MESSAGES:
+                    responseContent = "getUserMessages";
+                    break;
+                case MessageType::GET_CHATROOM_MESSAGES:
+                    responseContent = "getChatroomMessages";
+                    break;
+                default:
+                    return;
             }
-            break;
-        case MessageType::GET_CHATROOM_MESSAGES:
-            getChatroomMessages(message.first.getToChatroomID());
-            try {
-                MessageBuilder<WorkType> responseBuilder(&message.first);
-                #ifndef _MOCK_TESTING
-                responseBuilder.setMessageContents("getChatroomMessages");
-                #endif
-                WorkType responseMessage(&responseBuilder);
-                
-                std::cout << "LogManager: Serializing getChatroomMessages response..." << std::endl;
-                std::vector<char> responseData = responseMessage.serialize();
-                std::cout << "LogManager: Sending getChatroomMessages response..." << std::endl;
-                asio::write(*message.second, asio::buffer(responseData));
-                std::cout << "LogManager: Sent getChatroomMessages response successfully" << std::endl;
-            } catch (const std::exception& e) {
-                std::cerr << "Error in getChatroomMessages response: " << e.what() << std::endl;
-                throw;
-            }
-            break;
-        default:
-            break;
+            responseBuilder.setMessageContents(responseContent);
+            responseBuilder.setSuccessBit(true);
+            WorkType responseMessage(&responseBuilder);
+            this->_server.sendMessageToClient(message.getFromUserID(), responseMessage);
+            return;
+        }
+        #endif
+
+        switch(message.getMessageType()){
+            case MessageType::GET_USER_MESSAGES:
+                getUserMessages(message.getFromUserID());
+                break;
+            case MessageType::GET_CHATROOM_MESSAGES:
+                getChatroomMessages(message.getFromUserID());
+                break;
+            default:
+                break;
+        }   
+    } catch (const std::exception& e) {
+        std::cerr << "Error in answerLogRequest: " << e.what() << std::endl;
+        responseBuilder.setSuccessBit(false);
+        WorkType responseMessage(&responseBuilder);
+        this->_server.sendMessageToClient(message.getFromUserID(), responseMessage);
+        throw;
     }
 }
 
 template<typename WorkType>
 void LogManager<WorkType>::storeMessage(WorkType& message) {
-    #ifdef _DEBUG
-        std::cout << "LogManager: storeMessage called" << std::endl;
-    #endif
+    try{
+        // TODO: Store message in database. MessageType indicates what type of message it is.
+    } catch (const std::exception& e) {
+        std::cerr << "Error in storeMessage: " << e.what() << std::endl;
+        throw;
+    }
 }
 
 template class LogManager<Message>;

@@ -15,6 +15,7 @@ class Chatroom;
 template<typename MessageObject>
 class MessageBuilder {
     private:
+        bool _success_bit;
         std::string _messageContents;
         std::string _to_user_name;
         int _to_user_id;
@@ -32,6 +33,7 @@ class MessageBuilder {
 
     public:
         MessageBuilder() : 
+            _success_bit(true),
             _messageContents(""), 
             _to_user_name(""), 
             _to_user_id(-1), 
@@ -46,6 +48,9 @@ class MessageBuilder {
             _userIDToUsername(nullptr) {}
             
         MessageBuilder(MessageObject* message);
+
+        inline void setSuccessBit(bool success_bit) {_success_bit = success_bit;}
+        inline bool getSuccessBit() const {return _success_bit;}
 
         inline void setMessageContents(const std::string& messageContents) {_messageContents = messageContents;}
         inline const std::string& getMessageContents() const {return _messageContents;}

@@ -2,6 +2,7 @@
 #include "shared_include/Message.hpp"
 #include "shared_include/MessageBuilder.hpp"
 
+bool successBit = true;
 std::string messageContents = "Test Contents";
 std::string toUsername = "Test ToUsername";
 int toUserID = 99;
@@ -13,9 +14,9 @@ MessageType messageType = MessageType::TEST;
 
 void ExpectDefaultMessageState(const Message&);
 
-void ExpectMessageState(const Message&, const std::string&, const std::string&, const int, const std::string&, const int, const int, const int, const MessageType);
+void ExpectMessageState(const Message&, const bool, const std::string&, const std::string&, const int, const std::string&, const int, const int, const int, const MessageType);
 
-void buildMessage(MessageBuilder<Message>&, const std::string&, const std::string&, const int, const std::string&, const int, const int, const int, const MessageType);
+void buildMessage(MessageBuilder<Message>&, const bool, const std::string&, const std::string&, const int, const std::string&, const int, const int, const int, const MessageType);
 
 TEST(MessageTest, CreateMessageObject){
     ExpectDefaultMessageState(Message());
@@ -24,13 +25,13 @@ TEST(MessageTest, CreateMessageObject){
 TEST(MessageTest, FullMessageBuilderProcess){
     MessageBuilder<Message> messageBuilder;
     ExpectDefaultMessageState(Message(&messageBuilder));
-    buildMessage(messageBuilder, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
-    ExpectMessageState(Message(&messageBuilder), messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
+    buildMessage(messageBuilder, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
+    ExpectMessageState(Message(&messageBuilder), successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
 }
 
 TEST(MessageTest, SerializationDeserialization) {
     MessageBuilder<Message> builder;
-    buildMessage(builder, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
+    buildMessage(builder, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
     Message original(&builder);
     
     std::vector<char> serialized = original.serialize();
@@ -44,12 +45,25 @@ TEST(MessageTest, SerializationDeserialization) {
     
     Message deserialized = Message::deserialize(messageContent);
     
-    ExpectMessageState(deserialized, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
+    ExpectMessageState(deserialized, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
 }
 
 TEST(MessageTest, MessageTypeToString) {
-    EXPECT_EQ(Message::messageTypeToString(MessageType::SEND), "SEND");
-    EXPECT_EQ(Message::messageTypeToString(MessageType::RECV), "RECV");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::CONNECT), "CONNECT");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::AUTHENTICATE), "AUTHENTICATE");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::LOGOUT), "LOGOUT");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::ADD_USER), "ADD_USER");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::CHANGE_USER_PASSWORD), "CHANGE_USER_PASSWORD");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::CHANGE_USER_NAME), "CHANGE_USER_NAME");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::DELETE_USER), "DELETE_USER");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::SEND_MESSAGE_TO_USER), "SEND_MESSAGE_TO_USER");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::CREATE_CHATROOM), "CREATE_CHATROOM");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::DELETE_CHATROOM), "DELETE_CHATROOM");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::ADD_USER_TO_CHATROOM), "ADD_USER_TO_CHATROOM");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::SEND_MESSAGE_TO_CHATROOM), "SEND_MESSAGE_TO_CHATROOM");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::REMOVE_USER_FROM_CHATROOM), "REMOVE_USER_FROM_CHATROOM");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::GET_USER_MESSAGES), "GET_USER_MESSAGES");
+    EXPECT_EQ(Message::messageTypeToString(MessageType::GET_CHATROOM_MESSAGES), "GET_CHATROOM_MESSAGES");
     EXPECT_EQ(Message::messageTypeToString(MessageType::UNDEFINED), "UNDEFINED");
     EXPECT_EQ(Message::messageTypeToString(static_cast<MessageType>(999)), "UNKNOWN");
 }
@@ -67,7 +81,7 @@ TEST(MessageTest, PartialMessageBuilder) {
 
 TEST(MessageTest, PrintMessage) {
     MessageBuilder<Message> builder;
-    buildMessage(builder, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
+    buildMessage(builder, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
     Message message(&builder);
     
     
@@ -80,6 +94,7 @@ TEST(MessageTest, PrintMessage) {
 }
 
 void ExpectDefaultMessageState(const Message& message){
+    EXPECT_EQ(message.getSuccessBit(), true);
     EXPECT_EQ(message.getMessageContents(), "");
     EXPECT_EQ(message.getToUsername(), "");
     EXPECT_EQ(message.getToUserID(), -1);
@@ -90,7 +105,8 @@ void ExpectDefaultMessageState(const Message& message){
     EXPECT_EQ(message.getMessageType(), MessageType::UNDEFINED);
 }
 
-void ExpectMessageState(const Message& message, const std::string& messageContents, const std::string& toUsername, const int toUserID, const std::string& fromUsername, const int fromUserID, const int toChatroomID, const int fromChatroomID, const MessageType messageType){
+void ExpectMessageState(const Message& message, const bool successBit, const std::string& messageContents, const std::string& toUsername, const int toUserID, const std::string& fromUsername, const int fromUserID, const int toChatroomID, const int fromChatroomID, const MessageType messageType){
+    EXPECT_EQ(message.getSuccessBit(), successBit);
     EXPECT_EQ(message.getMessageContents(), messageContents);
     EXPECT_EQ(message.getToUsername(), toUsername);
     EXPECT_EQ(message.getToUserID(), toUserID);
@@ -101,7 +117,8 @@ void ExpectMessageState(const Message& message, const std::string& messageConten
     EXPECT_EQ(message.getMessageType(), messageType);
 }
 
-void buildMessage(MessageBuilder<Message>& messageBuilder, const std::string& messageContents, const std::string& toUsername, const int toUserID, const std::string& fromUsername, const int fromUserID, const int toChatroomID, const int fromChatroomID, const MessageType messageType) {
+void buildMessage(MessageBuilder<Message>& messageBuilder, const bool successBit, const std::string& messageContents, const std::string& toUsername, const int toUserID, const std::string& fromUsername, const int fromUserID, const int toChatroomID, const int fromChatroomID, const MessageType messageType) {
+    messageBuilder.setSuccessBit(successBit);
     messageBuilder.setMessageContents(messageContents);
     messageBuilder.setToUsername(toUsername);
     messageBuilder.setToUserID(toUserID);

@@ -17,6 +17,7 @@ class User{
         std::vector<Message> _messageInbox;
         std::unordered_set<int> _involvedChatrooms;
     public:
+        inline User() : _ID(0), _username(""), _password(""), _adminStatus(false), _onlineStatus(false) {};
         inline User(std::string& username, std::string& password, bool adminStatus, int ID): _username(username), _password(password), _adminStatus(adminStatus), _ID(ID) {};
         inline int getUserID() const {return _ID;}
         inline std::string getUsername() const {return _username;}

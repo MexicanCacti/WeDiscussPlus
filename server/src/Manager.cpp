@@ -2,7 +2,7 @@
 #include "Server.hpp"
 
 template<typename WorkType>
-void Manager<WorkType>::addWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) {
+void Manager<WorkType>::addWork(WorkType& work) {
     std::lock_guard<std::mutex> lock(this->_processQueueMutex);
     _processQueue.push(work);
 }
@@ -27,6 +27,12 @@ void Manager<WorkType>::handleClient() {
             std::cerr << "Error processing work: " << e.what() << std::endl;
         }
     }
+}
+
+template<typename WorkType>
+size_t Manager<WorkType>::getQueueSize() {
+    std::lock_guard<std::mutex> lock(this->_processQueueMutex);
+    return _processQueue.size();
 }
 
 template class Manager<Message>;

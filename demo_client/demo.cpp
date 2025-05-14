@@ -59,21 +59,29 @@ int main() {
     asio::connect(sendSocket, endpoints);
 
     MessageBuilder<Message> sendBuilder;
-    sendBuilder.setMessageType(MessageType::SEND);
-    sendBuilder.setMessageContents("I sent a SEND message!");
+    sendBuilder.setMessageType(MessageType::CONNECT);
+    sendBuilder.setMessageContents("I sent a CONNECT message!");
     sendBuilder.setFromUserID(clientID);
     Message sendRegMsg(&sendBuilder);
     sendMessage(sendSocket, sendRegMsg);
     std::cout << "Sent Message: ";
     sendRegMsg.printMessage();
 
+    Message connectMessage = receiveMessage(sendSocket);
+    if (connectMessage.getMessageType() == MessageType::CONNECT) {
+        std::cout << "Received CONNECT message from server:\n";
+        connectMessage.printMessage();
+    } else {
+        std::cerr << "Expected CONNECT message, got something else.\n";
+    }
+
     // Connect RECV socket
     tcp::socket recvSocket(context);
     asio::connect(recvSocket, endpoints);
 
     MessageBuilder<Message> recvBuilder; // server sends messages to this socket TO CLIENT
-    recvBuilder.setMessageType(MessageType::RECV);
-    recvBuilder.setMessageContents("I sent a RECV message!");
+    recvBuilder.setMessageType(MessageType::AUTHENTICATE);
+    recvBuilder.setMessageContents("I sent a AUTHENTICATE message!");
     recvBuilder.setFromUserID(clientID);
     Message recvRegMsg(&recvBuilder);
     sendMessage(recvSocket, recvRegMsg);
@@ -83,11 +91,11 @@ int main() {
 
     // Wait for SYSTEM ACK from server
     Message ack = receiveMessage(recvSocket);
-    if (ack.getMessageType() == MessageType::ACK) {
-        std::cout << "Received ACK from server:\n";
+    if (ack.getMessageType() == MessageType::AUTHENTICATE) {
+        std::cout << "Received AUTHENTICATE from server:\n";
         ack.printMessage();
     } else {
-        std::cerr << "Expected ACK, got something else.\n";
+        std::cerr << "Expected AUTHENTICATE, got something else.\n";
         return 1;
     }
     // Start listening for incoming messages in a separate thread

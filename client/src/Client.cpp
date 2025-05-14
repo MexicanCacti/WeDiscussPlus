@@ -6,27 +6,54 @@
 using namespace std::chrono_literals;
 
 Client::Client(const std::string& host, int port) 
-    : _ioContext(), _socket(_ioContext) {
+    : _ioContext(), sendSocket(_ioContext), receiveSocket(_ioContext) {
     tcp::resolver resolver(_ioContext);
     auto endpoints = resolver.resolve(host, std::to_string(port));
-    asio::connect(_socket, endpoints);
+    asio::connect(sendSocket, endpoints);
+    asio::connect(receiveSocket, endpoints);
 }
 
 void Client::start() {
+    MessageBuilder<Message> builder;
     try {
         // Send initial connection message
-        MessageBuilder<Message> builder;
-        builder.setMessageType(MessageType::SEND);
+        builder.setMessageType(MessageType::CONNECT);
         builder.setFromUserID(1);  // Test user ID
         builder.setMessageContents("Test connection");
         Message message(&builder);
-        sendMessage(message);
+        sendMessage(message, sendSocket);
+
+        Message receivedMessage = readMessage(sendSocket);
+        std::cout << "Received message: " << receivedMessage.getMessageContents() << std::endl;
+        if(receivedMessage.getMessageType() == MessageType::CONNECT) {
+            std::cout << "Received CONNECT message from server:\n";
+            receivedMessage.printMessage();
+        } else {
+            std::cerr << "Expected CONNECT message, got something else.\n";
+        }
+
+        
+        builder.setMessageType(MessageType::AUTHENTICATE);
+        builder.setFromUserID(1);
+        builder.setMessageContents("Test authenticate");
+        Message recvMessage(&builder);
+        sendMessage(recvMessage, receiveSocket);
+
+        receivedMessage = readMessage(receiveSocket);
+        std::cout << "Received message: " << receivedMessage.getMessageContents() << std::endl;
+        if(receivedMessage.getMessageType() == MessageType::AUTHENTICATE) { 
+            std::cout << "Received AUTHENTICATE message from server:\n";
+            receivedMessage.printMessage();
+        } else {
+            std::cerr << "Expected AUTHENTICATE message, got something else.\n";
+        }
+
 
         // Start receiving messages in a separate thread
         std::thread receiveThread([this]() {
             while (true) {
                 try {
-                    Message receivedMessage = readMessage();
+                    Message receivedMessage = readMessage(receiveSocket);
                     std::cout << "Received message: " << receivedMessage.getMessageContents() << std::endl;
                 }
                 catch (const std::exception& e) {
@@ -45,11 +72,11 @@ void Client::start() {
             if (input == "quit") break;
 
             MessageBuilder<Message> msgBuilder;
-            msgBuilder.setMessageType(MessageType::SEND);
+            msgBuilder.setMessageType(MessageType::UNDEFINED);
             msgBuilder.setFromUserID(1);
             msgBuilder.setMessageContents(input);
             Message msg(&msgBuilder);
-            sendMessage(msg);
+            sendMessage(msg, sendSocket);
         }
 
         receiveThread.join();
@@ -59,21 +86,21 @@ void Client::start() {
     }
 }
 
-void Client::sendMessage(const Message& message) {
+void Client::sendMessage(const Message& message, tcp::socket& socket) {
     std::cout << "Sending message: " << message.getMessageContents() << std::endl;
     std::vector<char> serializedMessage = message.serialize();
-    asio::write(_socket, asio::buffer(serializedMessage));
+    asio::write(socket, asio::buffer(serializedMessage));
 }
 
-Message Client::readMessage() {
+Message Client::readMessage(tcp::socket& socket) {
     int msgSize = 0;
-    asio::read(_socket, asio::buffer(&msgSize, sizeof(int)));
+    asio::read(socket, asio::buffer(&msgSize, sizeof(int)));
     
     if (msgSize <= 0) {
         throw std::runtime_error("Invalid message size received: " + std::to_string(msgSize));
     }
     
     std::vector<char> buffer(msgSize);
-    asio::read(_socket, asio::buffer(buffer.data(), msgSize));
+    asio::read(socket, asio::buffer(buffer.data(), msgSize));
     return Message::deserialize(buffer);
 }

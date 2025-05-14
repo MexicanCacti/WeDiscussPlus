@@ -26,6 +26,7 @@ class Chatroom{
         std::vector<Message> getSomeMessages() const;
         void addMessage(Message);
         void displayMessages();
+        std::vector<int> getUsers() const;
 };
 
 

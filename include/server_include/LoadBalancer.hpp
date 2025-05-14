@@ -17,7 +17,7 @@ class LoadBalancer{
         std::thread _balancerThread;
         std::unordered_map<int, std::shared_ptr<Manager<WorkType>>> _managers;
         std::unordered_map<int, std::thread> _managerThreads;
-        std::queue<std::pair<WorkType, std::shared_ptr<tcp::socket>>> _workQueue;
+        std::queue<WorkType> _workQueue;
         std::mutex _workQueueMutex;
         bool _isRunning = false;
         inline static int _managerID= 0;
@@ -25,13 +25,14 @@ class LoadBalancer{
         LoadBalancer() = default;
 
         virtual std::shared_ptr<Manager<WorkType>> createManager(Server<WorkType>& server) = 0;
-        void findBestManager(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
-        void assignWork(int managerID, std::pair<WorkType, std::shared_ptr<tcp::socket>>& work);
+        void findBestManager(WorkType& work);
+        void assignWork(int managerID, WorkType& work);
     public:
         void waitForWork();
         void initManagers(const int managerAmount, Server<WorkType>& server);
         void addManager(int id, std::shared_ptr<Manager<WorkType>> manager);
-        void pushWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>&& work);
+        void pushWork(WorkType& work);
+        void pushWork(WorkType&& work);
         inline std::unordered_map<int, std::shared_ptr<Manager<WorkType>>> getManagers() const {return _managers;};
         void stopAllThreads();
         ~LoadBalancer();

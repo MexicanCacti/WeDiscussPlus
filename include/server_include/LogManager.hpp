@@ -15,8 +15,8 @@ class LogManager : public Manager<WorkType> {
     private:
         void getUserMessages(int userID);
         void getChatroomMessages(int chatroomID);
-        void answerLogRequest(std::pair<WorkType, std::shared_ptr<tcp::socket>>& message);
-        void processWork(std::pair<WorkType, std::shared_ptr<tcp::socket>>& work) override;
+        void answerLogRequest(WorkType& message);
+        void processWork(WorkType& work) override;
         void setUpDatabaseConnection() override;
 
     public:
