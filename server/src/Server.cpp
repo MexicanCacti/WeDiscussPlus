@@ -162,7 +162,7 @@ void Server<WorkType>::registerClient(std::shared_ptr<tcp::socket> clientSocket)
             #ifdef _MOCK_TESTING
                 responseBuilder.setMessageContents("server");
             #endif
-            if(isFromClientSocketRegistered(clientID)){
+            if(isFromClientSocketRegistered(clientID)) {
                 responseBuilder.setSuccessBit(false);
                 #ifdef _DEBUG
                     std::cout << "Client ID: " << clientID << " already registered" << std::endl;
@@ -170,8 +170,8 @@ void Server<WorkType>::registerClient(std::shared_ptr<tcp::socket> clientSocket)
                 WorkType response = responseBuilder.buildMessage();
                 sendMessageToClient(clientID, response);
             }
-            else{
-                registerFromClientSocket(clientSocket, message);
+            else {
+                registerFromClientSocket(std::move(clientSocket), message);
             }
         }
         else if(messageType == MessageType::AUTHENTICATE) {
@@ -229,8 +229,8 @@ void Server<WorkType>::registerFromClientSocket(std::shared_ptr<tcp::socket> cli
         #endif
 
         try {
-            std::vector<char> data = response.serialize();
-            asio::write(*clientSocket, asio::buffer(data));
+            successCheck = sendConnectMessage(tempID, response);
+            if(!successCheck) throw std::runtime_error("Failed to send client confirmation message");
             
             #ifdef _DEBUG
                 std::cout << "Response sent to client " << tempID << " successfully" << std::endl;
@@ -242,15 +242,11 @@ void Server<WorkType>::registerFromClientSocket(std::shared_ptr<tcp::socket> cli
     }
     catch(const std::exception& e){
         std::cerr << "Error registering client: " << e.what() << std::endl;
-        try {
-            responseBuilder.setSuccessBit(false);
-            responseBuilder.setMessageContents("server");
-            WorkType response = responseBuilder.buildMessage();
-            std::vector<char> data = response.serialize();
-            asio::write(*clientSocket, asio::buffer(data));
-        } catch (const std::exception& e2) {
-            std::cerr << "Error sending error response: " << e2.what() << std::endl;
-        }
+        responseBuilder.setSuccessBit(false);
+        responseBuilder.setMessageContents("server");
+        WorkType response = responseBuilder.buildMessage();
+        std::vector<char> data = response.serialize();
+        asio::write(*clientSocket, asio::buffer(data));
     }
 }
 
@@ -352,6 +348,53 @@ bool Server<WorkType>::sendMessageToSocket(tcp::socket& socket, WorkType& messag
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error sending message to socket: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+template<typename WorkType>
+bool Server<WorkType>::sendConnectMessage(int clientID, WorkType& message) {
+    std::shared_ptr<tcp::socket> fromSocket;
+    {
+        auto socketMutex = getClientSocketMutex(clientID);
+        if (!socketMutex) {
+            #ifdef _DEBUG
+                std::cerr << "Client mutex not found for client ID: " << clientID << std::endl;
+            #endif
+            return false;
+        }
+        std::lock_guard<std::mutex> lock(*socketMutex.value());
+        #ifdef _DEBUG
+            std::cout << "Locked client socket mutex for client ID: " << clientID << std::endl;
+        #endif
+        auto it = _clientSocketMap.find(clientID);
+        if (it == _clientSocketMap.end() || !it->second.fromSocket) {
+            #ifdef _DEBUG
+                std::cerr << "Client socket not found for client ID: " << clientID << std::endl;
+            #endif
+            return false;
+        }
+        if (!it->second.fromSocket->is_open()) {
+            #ifdef _DEBUG
+                std::cerr << "Client socket is closed for client ID: " << clientID << std::endl;
+            #endif
+            return false;
+        }
+        fromSocket = it->second.fromSocket;
+    }
+    #ifdef _DEBUG
+        std::cout << "Sending message to client " << clientID << std::endl;
+    #endif
+    try {
+        bool successCheck = sendMessageToSocket(*fromSocket, message); 
+        #ifdef _DEBUG
+            std::cout << "Message sent to client " << clientID << " with success: " << successCheck << std::endl;
+        #endif
+        return successCheck;
+    } catch (const std::exception& e) {
+        #ifdef _DEBUG
+            std::cerr << "Error sending message to client " << clientID << ": " << e.what() << std::endl;
+        #endif
         return false;
     }
 }

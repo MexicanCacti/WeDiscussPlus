@@ -58,6 +58,7 @@ class Server {
         // Socket operations
         std::optional<WorkType> readMessageFromSocket(tcp::socket& socket);
         bool sendMessageToSocket(tcp::socket& socket, WorkType& message);
+        bool sendConnectMessage(int clientID, WorkType& message);
         
 
     public:
