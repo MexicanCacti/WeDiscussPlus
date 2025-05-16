@@ -5,13 +5,19 @@ set(SERVER_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/build/bin)
 message(STATUS "Building WeDiscussServer")
 
 add_library(server STATIC ${SERVER_FILES})
-target_link_libraries(server PRIVATE core asio)
+target_link_libraries(server PRIVATE core asio sqlite3)
 target_include_directories(server PUBLIC 
     ${CMAKE_SOURCE_DIR}/include/client_include
     ${CMAKE_SOURCE_DIR}/include/server_include
     ${CMAKE_SOURCE_DIR}/include/shared_include
     ${CMAKE_SOURCE_DIR}/libs/asio-1.30.2/include
+    ${CMAKE_SOURCE_DIR}/libs/sqlite3
 )
+
+# Propagate _DEBUG flag if it's defined
+if(DEFINED _DEBUG)
+    target_compile_definitions(server PRIVATE _DEBUG)
+endif()
 
 # Propagate _MOCK_TESTING flag if it's defined
 if(DEFINED _MOCK_TESTING)

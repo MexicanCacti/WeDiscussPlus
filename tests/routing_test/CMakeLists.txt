@@ -20,6 +20,7 @@ target_link_libraries(routing_test PRIVATE
     GTest::gtest_main
     mock_objects
     server
+    sqlite3
 )
 
 target_include_directories(routing_test PRIVATE 
@@ -27,6 +28,7 @@ target_include_directories(routing_test PRIVATE
     ${SERVER_INCLUDE_HEADERS}
     ${CMAKE_SOURCE_DIR}/tests/mock_objects
     ${CMAKE_SOURCE_DIR}/tests
+    ${CMAKE_SOURCE_DIR}/libs/sqlite3
 )
 
 include(GoogleTest)

@@ -25,10 +25,8 @@ file(GLOB_RECURSE CLIENT_INCLUDE_HEADERS include/client_include/*.hpp)
 file(GLOB_RECURSE SERVER_INCLUDE_HEADERS include/server_include/*.hpp)
 file(GLOB_RECURSE SHARED_INCLUDE_HEADERS include/shared_include/*.hpp)
 
-#Include Directories
 include_directories(include libs)
 
-#Add Libraries
 add_library(core STATIC ${INCLUDE_SOURCES})
 
 add_library(asio INTERFACE)
@@ -36,6 +34,20 @@ add_library(asio INTERFACE)
 target_compile_definitions(asio INTERFACE ASIO_STANDALONE)
 target_compile_definitions(core PRIVATE _DEBUG)
 target_include_directories(asio INTERFACE ${CMAKE_SOURCE_DIR}/libs/asio-1.30.2/include)
+
+add_library(sqlite3 STATIC
+    ${CMAKE_SOURCE_DIR}/libs/sqlite3/sqlite3.c
+)
+
+target_include_directories(sqlite3 PUBLIC 
+    ${CMAKE_SOURCE_DIR}/libs/sqlite3
+)
+
+target_compile_definitions(sqlite3 PRIVATE
+    SQLITE_ENABLE_COLUMN_METADATA
+    SQLITE_THREADSAFE
+    SQLITE_USE_URI=1
+)
 
 target_include_directories(core PUBLIC 
     ${CMAKE_SOURCE_DIR}/include/client_include
