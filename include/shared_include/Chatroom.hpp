@@ -1,33 +1,29 @@
-#ifndef CHATROOM_HPP
-#define CHATROOM_HPP
+#pragma once
 
 #include <unordered_map>
 #include <string>
 #include <vector>
-#include "Message.hpp"
+#include "ChatroomMessage.hpp"
 
-class Chatroom{
-    private:
-        static int _IDCounter;
-        int _ID;
-        std::unordered_map<int, std::string> _memberList; // ID : userName
-        std::unordered_map<int,std::vector<Message>> _userToMessage; // ID: Messages
-        std::vector<Message> _messageList; // Upon creation, messages corresponding to this chatroom should already be sorted by date in DB!
-        const static int _messageChunkDivisor = 4;
-        int _lastMessageSent = 0;
-    public:
-        Chatroom(int);
-        inline int getChatroomID() const {return _ID;}
-        inline std::unordered_map<int, std::string> getMemberList() const {return _memberList;}
-        inline void addMember(std::pair<int, std::string>& memberInfo) {_memberList[memberInfo.first] = memberInfo.second;}
-        inline void removeMember(int userID) {_memberList.erase(userID);}
-        std::pair<int,std::string> findMember(int);
-        inline std::vector<Message> getAllMessages() const {return _messageList;}
-        std::vector<Message> getSomeMessages() const;
-        void addMessage(Message);
-        void displayMessages();
-        std::vector<int> getUsers() const;
+class Chatroom {
+private:
+    int _ID;
+    std::unordered_map<int, std::string> _memberList; // ID : userName
+    std::unordered_map<int, std::vector<std::shared_ptr<ChatroomMessage>>> _userToMessage; // ID: Messages
+    std::vector<std::shared_ptr<ChatroomMessage>> _messageList; // Message List should be sorted by date sent, newest last
+    const static int _messageChunkDivisor = 4; // This is the number of messages to send to a client at a time. Clients can request older messages
+    std::unordered_map<int, int> _userToLastMessageSent; // ID: # of last message sent
+
+public:
+    Chatroom(int);
+    inline int getChatroomID() const { return _ID; }
+    inline const std::unordered_map<int, std::string>& getMemberList() const { return _memberList; }
+    inline void addMember(std::pair<int, std::string>& memberInfo) { _memberList[memberInfo.first] = memberInfo.second; }
+    inline void removeMember(int userID) { _memberList.erase(userID); }
+    std::pair<int,std::string> findMember(int);
+    inline const std::vector<std::shared_ptr<ChatroomMessage>>& getAllMessages() const { return _messageList; }
+    std::vector<std::shared_ptr<ChatroomMessage>> getSomeMessages() const;
+    void addMessage(const std::shared_ptr<ChatroomMessage>& message);
+    void displayMessages();
+    std::vector<int> getUsers() const;
 };
-
-
-#endif

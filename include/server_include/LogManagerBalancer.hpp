@@ -1,16 +1,11 @@
-#ifndef LOGMANAGERBALANCER_HPP
-#define LOGMANAGERBALANCER_HPP
+#pragma once
 #include "LogManager.hpp"
 #include "LoadBalancer.hpp"
-#include "Message.hpp"
-#include "shared_include/MockMessage.hpp"
+#include "MessageInterface.hpp"
 
-template<typename WorkType>
-class LogManagerBalancer : public LoadBalancer<WorkType>{
+class LogManagerBalancer : public LoadBalancer{
     private:
-        virtual std::shared_ptr<Manager<WorkType>> createManager(Server<WorkType>& server) override;
+        virtual std::shared_ptr<Manager> createManager(Server& server) override;
     public:
-        using LoadBalancer<WorkType>::LoadBalancer;
+        using LoadBalancer::LoadBalancer;
 };
-
-#endif

@@ -1,9 +1,7 @@
-#ifndef CHATROOMMANAGERBALANCER_HPP
-#define CHATROOMMANAGERBALANCER_HPP
+#pragma once
 #include "ChatroomManager.hpp"
 #include "LoadBalancer.hpp"
-#include "Message.hpp"
-#include "MockMessage.hpp"
+#include "MessageInterface.hpp"
 
 template<typename WorkType>
 class ChatroomManagerBalancer : public LoadBalancer<WorkType>{
@@ -12,5 +10,3 @@ class ChatroomManagerBalancer : public LoadBalancer<WorkType>{
     public:
         using LoadBalancer<WorkType>::LoadBalancer;
 };
-
-#endif

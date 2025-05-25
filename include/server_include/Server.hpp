@@ -1,5 +1,4 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#pragma once
 
 #include <atomic>
 #include <thread>
@@ -10,15 +9,17 @@
 #include <optional>
 #include <unordered_map>
 
-#include "Message.hpp"
+#include "MessageInterface.hpp"
+#include "MessageBuilder.hpp"
+#include "MessageFactory.hpp"
 #include "LoadBalancer.hpp"
 #include "ChatroomManagerBalancer.hpp"
 #include "UserManagerBalancer.hpp"
 #include "LogManagerBalancer.hpp"
+#include "Database.hpp"
 
 using asio::ip::tcp;
 
-template<typename WorkType>
 class Server {
     private:
         // Core server state
@@ -38,9 +39,9 @@ class Server {
         std::mutex _clientSocketMutexMapMutex; // Mutex for protecting _clientSocketMutexMap access
 
         // Manager balancers
-        std::unique_ptr<ChatroomManagerBalancer<WorkType>> _chatroomManagerBalancer;
-        std::unique_ptr<UserManagerBalancer<WorkType>> _userManagerBalancer;
-        std::unique_ptr<LogManagerBalancer<WorkType>> _logManagerBalancer;
+        std::unique_ptr<ChatroomManagerBalancer> _chatroomManagerBalancer;
+        std::unique_ptr<UserManagerBalancer> _userManagerBalancer;
+        std::unique_ptr<LogManagerBalancer> _logManagerBalancer;
 
         // Configuration
         int _MAX_CHATROOM_MANAGERS = 2;
@@ -53,12 +54,12 @@ class Server {
         
         // Client registration
         void registerClient(std::shared_ptr<tcp::socket> clientSocket);
-        void registerFromClientSocket(std::shared_ptr<tcp::socket> clientSocket, WorkType& message);
+        void registerFromClientSocket(std::shared_ptr<tcp::socket> clientSocket, std::shared_ptr<MessageInterface> message);
         
         // Socket operations
-        std::optional<WorkType> readMessageFromSocket(tcp::socket& socket);
-        bool sendMessageToSocket(tcp::socket& socket, WorkType& message);
-        bool sendConnectMessage(int clientID, WorkType& message);
+        std::optional<std::shared_ptr<MessageInterface>> readMessageFromSocket(tcp::socket& socket);
+        bool sendMessageToSocket(tcp::socket& socket, std::shared_ptr<MessageInterface> message);
+        bool sendConnectMessage(int clientID, std::shared_ptr<MessageInterface> message);
         
 
     public:
@@ -79,8 +80,8 @@ class Server {
         // Socket management
         bool addFromClientSocket(int clientID, std::shared_ptr<tcp::socket> fromSocket);
         bool addToClientSocket(int clientID, std::shared_ptr<tcp::socket> toSocket);
-        bool sendMessageToClient(int clientID, WorkType& message);
-        std::optional<WorkType> readMessageFromClient(int clientID);
+        bool sendMessageToClient(int clientID, std::shared_ptr<MessageInterface> message);
+        std::optional<std::shared_ptr<MessageInterface>> readMessageFromClient(int clientID);
         bool removeClientSocket(int clientID);
         
         // Socket status checks
@@ -95,7 +96,7 @@ class Server {
         bool removeClientSocketMutex(int clientID); // Only called when remove Client Socket called or when client auth called
 
         // Message handling
-        void addMessageToLogBalancer(WorkType& message);
+        void addMessageToLogBalancer(std::shared_ptr<MessageInterface> message);
 };
 
 #endif

@@ -1,9 +1,13 @@
-#ifndef MESSAGE_INTERFACE_HPP
-#define MESSAGE_INTERFACE_HPP
+#pragma once
 
 #include "MessageType.hpp"
 #include <string>
 #include <vector>
+#include <iostream>
+#include <memory>
+
+class MessageBuilder;
+class MessageFactory;
 
 class MessageInterface {
 protected:
@@ -22,33 +26,25 @@ protected:
     static void serializeString(std::vector<char>& buffer, const std::string& str);
     static std::string deserializeString(const std::vector<char>& buffer, size_t& offset);
 
+    friend class MessageBuilder; 
+    friend class MessageFactory;
 public:
-    MessageInterface() : 
-        _success_bit(true),
-        _messageContents(""), 
-        _to_user_name(""), 
-        _to_user_id(-1), 
-        _from_user_name(""), 
-        _from_user_id(-1), 
-        _to_chatroom_id(-1), 
-        _from_chatroom_id(-1), 
-        _messageType(MessageType::UNDEFINED) {}
 
-    virtual ~MessageInterface() = default;
-
-    inline bool getSuccessBit() const { return _success_bit; }
-    inline std::string getMessageContents() const { return _messageContents; }
-    inline std::string getToUsername() const { return _to_user_name; }
-    inline int getToUserID() const { return _to_user_id; }
-    inline std::string getFromUsername() const { return _from_user_name; }
-    inline int getFromUserID() const { return _from_user_id; }
-    inline int getToChatroomID() const { return _to_chatroom_id; }
-    inline int getFromChatroomID() const { return _from_chatroom_id; }
-    inline MessageType getMessageType() const { return _messageType; }
-    static std::string messageTypeToString(const MessageType& messageType);
+    bool getSuccessBit() const { return _success_bit; }
+    const std::string& getMessageContents() const { return _messageContents; }
+    const std::string& getToUsername() const { return _to_user_name; }
+    int getToUserID() const { return _to_user_id; }
+    const std::string& getFromUsername() const { return _from_user_name; }
+    int getFromUserID() const { return _from_user_id; }
+    int getToChatroomID() const { return _to_chatroom_id; }
+    int getFromChatroomID() const { return _from_chatroom_id; }
+    MessageType getMessageType() const { return _messageType; }
 
     virtual std::vector<char> serialize() const = 0;
+    virtual void deserialize(const std::vector<char>& data, size_t& offset) = 0;
     virtual void printMessage() const = 0;
+
+    static std::string messageTypeToString(const MessageType& messageType);
+    static std::shared_ptr<MessageInterface> createFromType(MessageType type);
 };
 
-#endif 

@@ -24,6 +24,7 @@ file(GLOB_RECURSE INCLUDE_SOURCES shared_files/*.cpp)
 file(GLOB_RECURSE CLIENT_INCLUDE_HEADERS include/client_include/*.hpp)
 file(GLOB_RECURSE SERVER_INCLUDE_HEADERS include/server_include/*.hpp)
 file(GLOB_RECURSE SHARED_INCLUDE_HEADERS include/shared_include/*.hpp)
+file(GLOB_RECURSE MESSAGE_HEADERS include/shared_include/messages/*.hpp)
 
 include_directories(include libs)
 
@@ -53,6 +54,7 @@ target_include_directories(core PUBLIC
     ${CMAKE_SOURCE_DIR}/include/client_include
     ${CMAKE_SOURCE_DIR}/include/server_include
     ${CMAKE_SOURCE_DIR}/include/shared_include
+    ${CMAKE_SOURCE_DIR}/include/shared_include/messages
 )
 
 target_link_libraries(core PUBLIC asio)
@@ -63,9 +65,9 @@ if(UNIX)
 endif()
 
 #Recursively build other projects
-add_subdirectory(client)
-add_subdirectory(server)
-add_subdirectory(demo_client)
+#add_subdirectory(client)
+#add_subdirectory(server)
+#add_subdirectory(demo_client)
 #add_subdirectory(demo_server)
 add_subdirectory(tests)
 

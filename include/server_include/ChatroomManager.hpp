@@ -1,32 +1,25 @@
-#ifndef CHATROOMMANAGER_HPP
-#define CHATROOMMANAGER_HPP
+#pragma once
 
 #include "Manager.hpp"
-#include "Message.hpp"
 #include "Chatroom.hpp"
-#include "MockMessage.hpp"
 #include <chrono>
 #include <shared_mutex>
 using namespace std::chrono_literals;
 
-template<typename WorkType>
 class Server;
 
-template<typename WorkType>
-class ChatroomManager : public Manager<WorkType> {
+class ChatroomManager : public Manager {
     private:
-    static std::unordered_map<int, Chatroom> _chatroomMap; // Cache of chatroomID : Chatroom object
-    static std::shared_mutex _chatroomMapMutex; // Fine if multiple threads read, but only one thread writes.
+        static std::unordered_map<int, Chatroom> _chatroomMap; // Cache of chatroomID : Chatroom object
+        static std::shared_mutex _chatroomMapMutex; // Fine if multiple threads read, but only one thread writes.
 
-    void createChatroom(WorkType& work);
-    void deleteChatroom(WorkType& work);
-    void addUserToChatroom(WorkType& work);
-    void sendMessageToChatroom(WorkType& work);
-    void removeUserFromChatroom(WorkType& work);
-    void setUpDatabaseConnection() override;
-    void processWork(WorkType& work) override;
-public:
-    ChatroomManager(Server<WorkType>& server) : Manager<WorkType>(server) {this->setUpDatabaseConnection();}
+        void createChatroom(std::shared_ptr<MessageInterface>& work);
+        void deleteChatroom(std::shared_ptr<MessageInterface>& work);
+        void addUserToChatroom(std::shared_ptr<MessageInterface>& work);
+        void sendMessageToChatroom(std::shared_ptr<MessageInterface>& work);
+        void removeUserFromChatroom(std::shared_ptr<MessageInterface>& work);
+        void setUpDatabaseConnection() override;
+        void processWork(std::shared_ptr<MessageInterface>& work) override;
+    public:
+        ChatroomManager(Server& server) : Manager(server) {this->setUpDatabaseConnection();}
 };
-
-#endif

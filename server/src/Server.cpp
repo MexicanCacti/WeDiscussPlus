@@ -2,22 +2,20 @@
 
 // Core Server Operations
 
-template<typename WorkType>
-Server<WorkType>::Server(const std::string& ip, int port) 
+Server::Server(const std::string& ip, int port) 
     : _port(port), 
       _ioContext(),
       _connectionAcceptor(_ioContext, tcp::endpoint(asio::ip::make_address(ip), port)) {}
 
-template<typename WorkType>
-void Server<WorkType>::startServer(){
+void Server::startServer(){
     try {
         #ifdef _DEBUG
         std::cout << "Server: Starting initialization..." << std::endl;
         #endif
         
-        _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer<WorkType>>();
-        _userManagerBalancer = std::make_unique<UserManagerBalancer<WorkType>>();
-        _logManagerBalancer = std::make_unique<LogManagerBalancer<WorkType>>();
+        _chatroomManagerBalancer = std::make_unique<ChatroomManagerBalancer>();
+        _userManagerBalancer = std::make_unique<UserManagerBalancer>();
+        _logManagerBalancer = std::make_unique<LogManagerBalancer>();
         #ifdef _DEBUG
         std::cout << "Server: Manager balancers created successfully" << std::endl;
         #endif
@@ -69,8 +67,7 @@ void Server<WorkType>::startServer(){
     }
 }
 
-template<typename WorkType>
-void Server<WorkType>::stopServer(){
+void Server::stopServer(){
     _isRunning = false;
     
     if (_chatroomManagerBalancer) _chatroomManagerBalancer->stopAllThreads();
@@ -84,8 +81,7 @@ void Server<WorkType>::stopServer(){
     _ioContext.stop();
 }
 
-template<typename WorkType>
-void Server<WorkType>::listenForConnections(){
+void Server::listenForConnections(){
     try {
         tcp::endpoint localEndpoint = _connectionAcceptor.local_endpoint();
         #ifdef _DEBUG
@@ -121,18 +117,7 @@ void Server<WorkType>::listenForConnections(){
     }
 }
 
-template<typename WorkType>
-void Server<WorkType>::shutdown(){
-    _isRunning = false;
-    if(_chatroomManagerBalancer) _chatroomManagerBalancer->stopAllThreads();
-    if(_userManagerBalancer) _userManagerBalancer->stopAllThreads();
-    if(_logManagerBalancer) _logManagerBalancer->stopAllThreads();
-}
-
-// Client registration and handling
-
-template<typename WorkType>
-void Server<WorkType>::registerClient(std::shared_ptr<tcp::socket> clientSocket){
+void Server::registerClient(std::shared_ptr<tcp::socket> clientSocket){
     try{
         #ifdef _DEBUG
             std::cout << "Registering client..." << std::endl;
@@ -141,16 +126,16 @@ void Server<WorkType>::registerClient(std::shared_ptr<tcp::socket> clientSocket)
         if (!messageOpt) {
             throw std::runtime_error("Failed to read message from socket");
         }
-        WorkType& message = *messageOpt;
+        auto message = *messageOpt;
         
-        int clientID = message.getFromUserID();
-        MessageType messageType = message.getMessageType();
+        int clientID = message->getFromUserID();
+        MessageType messageType = message->getMessageType();
 
         #ifdef _DEBUG
             std::cout << "Client ID: " << clientID << "\t";
             std::cout << "Message Type: " << static_cast<int>(messageType) << "\t";
-            std::cout << "Message Type String: " << Message::messageTypeToString(messageType) << "\t";
-            std::cout << "Message Contents: " << message.getMessageContents() << std::endl;
+            std::cout << "Message Type String: " << MessageInterface::messageTypeToString(messageType) << "\t";
+            std::cout << "Message Contents: " << message->getMessageContents() << std::endl;
         #endif
 
         if(messageType == MessageType::CONNECT) {
@@ -158,7 +143,7 @@ void Server<WorkType>::registerClient(std::shared_ptr<tcp::socket> clientSocket)
                 std::cout << "Registering CONNECT message" << std::endl;
             #endif
 
-            MessageBuilder<WorkType> responseBuilder(&message);
+            MessageBuilder responseBuilder;
             #ifdef _MOCK_TESTING
                 responseBuilder.setMessageContents("server");
             #endif
@@ -167,7 +152,7 @@ void Server<WorkType>::registerClient(std::shared_ptr<tcp::socket> clientSocket)
                 #ifdef _DEBUG
                     std::cout << "Client ID: " << clientID << " already registered" << std::endl;
                 #endif
-                WorkType response = responseBuilder.buildMessage();
+                auto response = responseBuilder.buildConnectMessage(); // TODO: FIX ME!
                 sendMessageToClient(clientID, response);
             }
             else {
@@ -186,14 +171,14 @@ void Server<WorkType>::registerClient(std::shared_ptr<tcp::socket> clientSocket)
         }
         else {
             #ifdef _DEBUG
-                std::cerr << "Unexpected message type in registerClient: " << Message::messageTypeToString(messageType) << std::endl;
+                std::cerr << "Unexpected message type in registerClient: " << MessageInterface::messageTypeToString(messageType) << std::endl;
             #endif
-            MessageBuilder<WorkType> responseBuilder(&message);
+            MessageBuilder responseBuilder;
             #ifdef _MOCK_TESTING
                 responseBuilder.setMessageContents("server");
             #endif
             responseBuilder.setSuccessBit(false);
-            WorkType response = responseBuilder.buildMessage();
+            auto response = responseBuilder.buildConnectMessage();
             sendMessageToClient(clientID, response);
         }
     }
@@ -202,9 +187,8 @@ void Server<WorkType>::registerClient(std::shared_ptr<tcp::socket> clientSocket)
     }
 }
 
-template<typename WorkType>
-void Server<WorkType>::registerFromClientSocket(std::shared_ptr<tcp::socket> clientSocket, WorkType& message){
-    MessageBuilder<WorkType> responseBuilder(&message);
+void Server::registerFromClientSocket(std::shared_ptr<tcp::socket> clientSocket, std::shared_ptr<MessageInterface> message){
+    MessageBuilder responseBuilder;
     int tempID = --_tempClientID;
     try{
         #ifdef _DEBUG
@@ -218,11 +202,11 @@ void Server<WorkType>::registerFromClientSocket(std::shared_ptr<tcp::socket> cli
             std::cout << "Client ID: " << tempID << " registered FROM client socket" << std::endl;
         #endif
 
-        responseBuilder.setSuccessBit(true);
-        responseBuilder.setFromUserID(tempID);
-        responseBuilder.setToUserID(tempID);
-        responseBuilder.setMessageContents("server");
-        WorkType response = responseBuilder.buildMessage();
+        responseBuilder.setSuccessBit(true)
+                      .setFromUser(message->getFromUsername(), tempID)
+                      .setToUser(message->getFromUsername(), tempID)
+                      .setMessageContents("server");
+        auto response = responseBuilder.buildConnectMessage();
         
         #ifdef _DEBUG
             std::cout << "Attempting to send response to client " << tempID << std::endl;
@@ -242,16 +226,15 @@ void Server<WorkType>::registerFromClientSocket(std::shared_ptr<tcp::socket> cli
     }
     catch(const std::exception& e){
         std::cerr << "Error registering client: " << e.what() << std::endl;
-        responseBuilder.setSuccessBit(false);
-        responseBuilder.setMessageContents("server");
-        WorkType response = responseBuilder.buildMessage();
-        std::vector<char> data = response.serialize();
+        responseBuilder.setSuccessBit(false)
+                      .setMessageContents("server");
+        auto response = responseBuilder.buildConnectMessage();
+        std::vector<char> data = response->serialize();
         asio::write(*clientSocket, asio::buffer(data));
     }
 }
 
-template<typename WorkType>
-void Server<WorkType>::handleClient(int clientID){
+void Server::handleClient(int clientID){
     try{
         std::string clientIP = getClientSocketIP(clientID);
         if(clientIP == "") throw std::runtime_error("Client ID: " + std::to_string(clientID) + " not found in client socket map [FROM]");   
@@ -264,14 +247,14 @@ void Server<WorkType>::handleClient(int clientID){
             try {
                 auto messageOpt = readMessageFromClient(clientID);
                 if(!messageOpt) throw std::runtime_error("Failed to read message from Client ID: " + std::to_string(clientID));
-                WorkType& message = *messageOpt;
+                auto message = *messageOpt;
                 #ifdef _DEBUG
                 std::cout << "Received from client " << clientID << ": ";
-                message.printMessage();
+                message->printMessage();
                 #endif
 
                 // Route message to appropriate manager based on type
-                switch(message.getMessageType()) {
+                switch(message->getMessageType()) {
                     case MessageType::AUTHENTICATE:
                     case MessageType::LOGOUT:
                     case MessageType::ADD_USER:
@@ -280,7 +263,7 @@ void Server<WorkType>::handleClient(int clientID){
                     case MessageType::DELETE_USER:
                     case MessageType::SEND_MESSAGE_TO_USER:
                         #ifdef _DEBUG
-                        std::cout << "Routing to UserManager: " << Message::messageTypeToString(message.getMessageType()) << std::endl;
+                        std::cout << "Routing to UserManager: " << MessageInterface::messageTypeToString(message->getMessageType()) << std::endl;
                         #endif
                         _userManagerBalancer->pushWork(message);
                         break;
@@ -291,7 +274,7 @@ void Server<WorkType>::handleClient(int clientID){
                     case MessageType::SEND_MESSAGE_TO_CHATROOM:
                     case MessageType::REMOVE_USER_FROM_CHATROOM:
                         #ifdef _DEBUG
-                        std::cout << "Routing to ChatroomManager: " << Message::messageTypeToString(message.getMessageType()) << std::endl;
+                        std::cout << "Routing to ChatroomManager: " << MessageInterface::messageTypeToString(message->getMessageType()) << std::endl;
                         #endif
                         _chatroomManagerBalancer->pushWork(message);
                         break;
@@ -299,19 +282,19 @@ void Server<WorkType>::handleClient(int clientID){
                     case MessageType::GET_USER_MESSAGES:
                     case MessageType::GET_CHATROOM_MESSAGES:
                         #ifdef _DEBUG
-                        std::cout << "Routing to LogManager: " << Message::messageTypeToString(message.getMessageType()) << std::endl;
+                        std::cout << "Routing to LogManager: " << MessageInterface::messageTypeToString(message->getMessageType()) << std::endl;
                         #endif
                         _logManagerBalancer->pushWork(message);
                         break;
                     
                     default:
                         #ifdef _DEBUG
-                        std::cerr << "Unknown message type received: " << Message::messageTypeToString(message.getMessageType()) << std::endl;
+                        std::cerr << "Unknown message type received: " << MessageInterface::messageTypeToString(message->getMessageType()) << std::endl;
                         #endif
-                        MessageBuilder<WorkType> responseBuilder(&message);
-                        responseBuilder.setSuccessBit(false);
-                        responseBuilder.setMessageContents("server");
-                        WorkType response = responseBuilder.buildMessage();
+                        MessageBuilder responseBuilder;
+                        responseBuilder.setSuccessBit(false)
+                                     .setMessageContents("server");
+                        auto response = responseBuilder.buildConnectMessage();
                         sendMessageToClient(clientID, response);
                         break;
                 }
@@ -340,10 +323,9 @@ void Server<WorkType>::handleClient(int clientID){
 
 // Socket operations
 
-template<typename WorkType>
-bool Server<WorkType>::sendMessageToSocket(tcp::socket& socket, WorkType& message) {
+bool Server::sendMessageToSocket(tcp::socket& socket, std::shared_ptr<MessageInterface> message) {
     try {
-        std::vector<char> data = message.serialize();
+        std::vector<char> data = message->serialize();
         asio::write(socket, asio::buffer(data));
         return true;
     } catch (const std::exception& e) {
@@ -352,8 +334,7 @@ bool Server<WorkType>::sendMessageToSocket(tcp::socket& socket, WorkType& messag
     }
 }
 
-template<typename WorkType>
-bool Server<WorkType>::sendConnectMessage(int clientID, WorkType& message) {
+bool Server::sendConnectMessage(int clientID, std::shared_ptr<MessageInterface> message) {
     std::shared_ptr<tcp::socket> fromSocket;
     {
         auto socketMutex = getClientSocketMutex(clientID);
@@ -399,8 +380,7 @@ bool Server<WorkType>::sendConnectMessage(int clientID, WorkType& message) {
     }
 }
 
-template<typename WorkType>
-std::optional<WorkType> Server<WorkType>::readMessageFromSocket(tcp::socket& socket) {
+std::optional<std::shared_ptr<MessageInterface>> Server::readMessageFromSocket(tcp::socket& socket) {
     try {
         int msgSize = 0;
         asio::read(socket, asio::buffer(&msgSize, sizeof(int)));
@@ -416,10 +396,11 @@ std::optional<WorkType> Server<WorkType>::readMessageFromSocket(tcp::socket& soc
         std::cout << "Message data received successfully, size: " << msgSize << std::endl;
         #endif
 
-        WorkType message = WorkType::deserialize(buffer);
+        // TODO: Use MessageFactory to create appropriate message type
+        auto message = MessageInterface::deserialize(buffer);
         
         #ifdef _DEBUG
-        std::cout << "Message deserialized successfully, type: " << static_cast<int>(message.getMessageType()) << std::endl;
+        std::cout << "Message deserialized successfully, type: " << static_cast<int>(message->getMessageType()) << std::endl;
         #endif
 
         return message;
@@ -429,8 +410,7 @@ std::optional<WorkType> Server<WorkType>::readMessageFromSocket(tcp::socket& soc
     }
 }
 
-template<typename WorkType>
-std::optional<WorkType> Server<WorkType>::readMessageFromClient(int clientID) {
+std::optional<std::shared_ptr<MessageInterface>> Server::readMessageFromClient(int clientID) {
     std::shared_ptr<tcp::socket> fromSocket;
     {
         auto socketMutex = getClientSocketMutex(clientID);
@@ -447,8 +427,7 @@ std::optional<WorkType> Server<WorkType>::readMessageFromClient(int clientID) {
     return readMessageFromSocket(*fromSocket);
 }
 
-template<typename WorkType>
-bool Server<WorkType>::sendMessageToClient(int clientID, WorkType& message) {
+bool Server::sendMessageToClient(int clientID, std::shared_ptr<MessageInterface> message) {
     std::shared_ptr<tcp::socket> toSocket;
     {
         auto socketMutex = getClientSocketMutex(clientID);
@@ -494,8 +473,7 @@ bool Server<WorkType>::sendMessageToClient(int clientID, WorkType& message) {
     }
 }
 
-template<typename WorkType>
-bool Server<WorkType>::addFromClientSocket(int clientID, std::shared_ptr<tcp::socket> fromSocket) {
+bool Server::addFromClientSocket(int clientID, std::shared_ptr<tcp::socket> fromSocket) {
     std::lock_guard<std::mutex> lock(_clientSocketMutexMapMutex);
     if (_clientSocketMap.find(clientID) != _clientSocketMap.end()) {
         return false;
@@ -506,8 +484,7 @@ bool Server<WorkType>::addFromClientSocket(int clientID, std::shared_ptr<tcp::so
     return true;
 }
 
-template<typename WorkType>
-bool Server<WorkType>::addToClientSocket(int clientID, std::shared_ptr<tcp::socket> toSocket) {
+bool Server::addToClientSocket(int clientID, std::shared_ptr<tcp::socket> toSocket) {
     std::lock_guard<std::mutex> lock(_clientSocketMutexMapMutex);
     #ifdef _DEBUG
         std::cout << "Attempting to add TO socket for client " << clientID << std::endl;
@@ -534,8 +511,7 @@ bool Server<WorkType>::addToClientSocket(int clientID, std::shared_ptr<tcp::sock
     return true;
 }
 
-template<typename WorkType>
-bool Server<WorkType>::removeClientSocket(int clientID) {
+bool Server::removeClientSocket(int clientID) {
     try {
         auto socketMutex = getClientSocketMutex(clientID);
         if (!socketMutex) {
@@ -568,8 +544,7 @@ bool Server<WorkType>::removeClientSocket(int clientID) {
     return false;
 }
 
-template<typename WorkType>
-bool Server<WorkType>::isFromClientSocketRegistered(int clientID) {
+bool Server::isFromClientSocketRegistered(int clientID) {
     auto socketMutex = getClientSocketMutex(clientID);
     if (!socketMutex) {
         return false;
@@ -582,8 +557,7 @@ bool Server<WorkType>::isFromClientSocketRegistered(int clientID) {
     return isRegistered;
 }
 
-template<typename WorkType>
-bool Server<WorkType>::isToClientSocketRegistered(int clientID) {
+bool Server::isToClientSocketRegistered(int clientID) {
     auto socketMutex = getClientSocketMutex(clientID);
     if (!socketMutex) {
         return false;
@@ -596,8 +570,7 @@ bool Server<WorkType>::isToClientSocketRegistered(int clientID) {
     return isRegistered;
 }
 
-template<typename WorkType>
-std::string Server<WorkType>::getClientSocketIP(int clientID) {
+std::string Server::getClientSocketIP(int clientID) {
     try {
         auto socketMutex = getClientSocketMutex(clientID);
         if (!socketMutex) {
@@ -613,8 +586,7 @@ std::string Server<WorkType>::getClientSocketIP(int clientID) {
 }
 
 // Mutex Operations
-template<typename WorkType>
-std::optional<std::shared_ptr<std::mutex>> Server<WorkType>::getClientSocketMutex(int clientID) {
+std::optional<std::shared_ptr<std::mutex>> Server::getClientSocketMutex(int clientID) {
     std::lock_guard<std::mutex> lock(_clientSocketMutexMapMutex);
     auto it = _clientSocketMutexMap.find(clientID);
     if (it != _clientSocketMutexMap.end()) {
@@ -623,14 +595,12 @@ std::optional<std::shared_ptr<std::mutex>> Server<WorkType>::getClientSocketMute
     return std::nullopt;
 }
 
-template<typename WorkType>
-bool Server<WorkType>::removeClientSocketMutex(int clientID) {
+bool Server::removeClientSocketMutex(int clientID) {
     std::lock_guard<std::mutex> lock(_clientSocketMutexMapMutex);
     return _clientSocketMutexMap.erase(clientID) > 0;
 }
 
-template<typename WorkType>
-bool Server<WorkType>::addClientSocketMutex(int clientID, std::shared_ptr<std::mutex> socketMutex) {
+bool Server::addClientSocketMutex(int clientID, std::shared_ptr<std::mutex> socketMutex) {
     std::lock_guard<std::mutex> lock(_clientSocketMutexMapMutex);
     if (_clientSocketMutexMap.find(clientID) != _clientSocketMutexMap.end()) {
         return false;
@@ -639,13 +609,8 @@ bool Server<WorkType>::addClientSocketMutex(int clientID, std::shared_ptr<std::m
     return true;
 }
 
-template<typename WorkType>
-void Server<WorkType>::addMessageToLogBalancer(WorkType& message) {
+void Server::addMessageToLogBalancer(std::shared_ptr<MessageInterface> message) {
     if (_logManagerBalancer) {
-        _logManagerBalancer->pushWork(std::move(message));
+        _logManagerBalancer->pushWork(message);
     }
 }
-
-template class Server<Message>;
-template class Server<MockMessage>;
-template class Server<MockMessage>;

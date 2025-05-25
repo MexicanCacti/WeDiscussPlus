@@ -3,11 +3,19 @@
 #include <iostream>
 
 template<typename WorkType>
-void UserManager<WorkType>::setUpDatabaseConnection(){
+void UserManager<WorkType>::setUpDatabaseConnection() {
     try {
-        // TODO: Implement database connection setup
+        const std::string dbPath = "wediscuss.db";
+        if (!this->initializeDatabase(dbPath)) {
+            throw std::runtime_error("Failed to initialize database connection");
+        }
+        
+        #ifdef _DEBUG
+            std::cout << "Database connection established for UserManager" << std::endl;
+        #endif
     } catch (const std::exception& e) {
         std::cerr << "Error in setUpDatabaseConnection: " << e.what() << std::endl;
+        throw;
     }
 }
 
@@ -184,7 +192,7 @@ void UserManager<WorkType>::logoutUser(WorkType& work){
 }
 
 template<typename WorkType>
-void UserManager<WorkType>::addUser(WorkType& work){
+void UserManager<WorkType>::addUser(WorkType& work) {
     MessageBuilder<WorkType> responseBuilder(&work);
     int userID = work.getFromUserID();
     try {
@@ -195,7 +203,24 @@ void UserManager<WorkType>::addUser(WorkType& work){
             this->_server.sendMessageToClient(userID, mockMessage);
             return;
         #endif
-        // TODO: Implement addUser logic
+
+        std::string username = work.getToUsername();
+        std::string password = work.getMessageContents(); 
+
+        if (!this->getDatabase().insertUser(username, password)) {
+            throw std::runtime_error("Failed to insert user into database");
+        }
+
+        {
+            std::unique_lock<std::shared_mutex> mapLock(_userMapMutex);
+            std::unique_lock<std::shared_mutex> lookupLock(_userLookupMutex);
+            
+            int newUserID = this->getDatabase().getUserID(username);
+            
+            _userMap[newUserID] = User(username, password);
+            _usernameToUserID[username] = newUserID;
+            _userIDToUsername[newUserID] = username;
+        }
         
         responseBuilder.setSuccessBit(true);
         responseBuilder.setMessageContents("addUser");
@@ -203,7 +228,6 @@ void UserManager<WorkType>::addUser(WorkType& work){
         this->_server.sendMessageToClient(userID, responseMessage);
     } catch (const std::exception& e) {
         std::cerr << "Error in addUser: " << e.what() << std::endl;
-        MessageBuilder<WorkType> responseBuilder(&work);
         responseBuilder.setSuccessBit(false);
         responseBuilder.setMessageContents("addUser");
         WorkType failedMessage(&responseBuilder);

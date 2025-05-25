@@ -1,14 +1,12 @@
 #include "Manager.hpp"
 #include "Server.hpp"
 
-template<typename WorkType>
-void Manager<WorkType>::addWork(WorkType& work) {
+void Manager::addWork(std::shared_ptr<MessageInterface>& work) {
     std::lock_guard<std::mutex> lock(this->_processQueueMutex);
     _processQueue.push(work);
 }
 
-template<typename WorkType>
-void Manager<WorkType>::handleClient() {
+void Manager::handleClient() {
     while(this->_shouldDoWork) {
         std::unique_lock<std::mutex> lock(this->_processQueueMutex);
         if(_processQueue.empty()) {
@@ -17,7 +15,7 @@ void Manager<WorkType>::handleClient() {
             continue;
         }
         
-        auto work = std::move(_processQueue.front());
+        auto work = _processQueue.front();
         _processQueue.pop();
         lock.unlock();
         
@@ -29,11 +27,7 @@ void Manager<WorkType>::handleClient() {
     }
 }
 
-template<typename WorkType>
-size_t Manager<WorkType>::getQueueSize() {
+size_t Manager::getQueueSize() {
     std::lock_guard<std::mutex> lock(this->_processQueueMutex);
     return _processQueue.size();
 }
-
-template class Manager<Message>;
-template class Manager<MockMessage>;
