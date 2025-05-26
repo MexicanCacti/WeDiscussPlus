@@ -8,5 +8,5 @@
 
 class MessageFactory {
 public:
-    static std::shared_ptr<MessageInterface> deserialize(const std::vector<char>& data);
+    static std::shared_ptr<MessageInterface> deserialize(const std::vector<char>& data, size_t& offset);
 };

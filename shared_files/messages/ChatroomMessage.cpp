@@ -1,10 +1,6 @@
 #include "ChatroomMessage.hpp"
 #include <iostream>
 
-ChatroomMessage::ChatroomMessage() {
-    _messageType = MessageType::SEND_MESSAGE_TO_CHATROOM;
-}
-
 ChatroomMessage::ChatroomMessage(const std::vector<char>& data, size_t& offset) {
     _messageType = MessageType::SEND_MESSAGE_TO_CHATROOM;
     deserialize(data, offset);

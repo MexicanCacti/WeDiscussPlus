@@ -3,6 +3,7 @@
 enum class MessageType{
     CONNECT, // Client->Server Initiates connection, Server->Client Connection Success
     AUTHENTICATE, // Client->Server Authenticates user, Server->Client Authentication Success
+    AUTH_RESPONSE, // Server->Client Sends user data after successful authentication
     LOGOUT, // UserManager->logoutUser
     ADD_USER, // UserManager->addUser
     CHANGE_USER_PASSWORD, // UserManager->changeUserPassword

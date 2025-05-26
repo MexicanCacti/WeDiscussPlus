@@ -5,6 +5,7 @@
 #include "UserMessage.hpp"
 #include "ChatroomMessage.hpp"
 #include "AuthMessage.hpp"
+#include "AuthResponseMessage.hpp"
 #include "Chatroom.hpp"
 #include "User.hpp"
 #include <memory>
@@ -15,9 +16,14 @@ private:
 
     std::shared_ptr<MessageInterface> buildAuthMessage();
 
+    std::shared_ptr<MessageInterface> buildAuthResponseMessage();
+
     std::shared_ptr<MessageInterface> buildUserMessage();
 
     std::shared_ptr<MessageInterface> buildChatroomMessage();
+
+    std::shared_ptr<MessageInterface> buildLogoutMessage();
+
 protected:
     bool _success_bit;
     std::string _messageContents;
@@ -28,6 +34,9 @@ protected:
     int _to_chatroom_id;
     int _from_chatroom_id;
     MessageType _messageType;
+    std::unordered_map<int, std::string> _userMap;
+    std::vector<ChatroomData> _chatrooms;
+    std::vector<std::shared_ptr<MessageInterface>> _inbox;
 
 public:
     MessageBuilder() : 
@@ -54,6 +63,12 @@ public:
     void setFromChatroom(int id);
 
     void setMessageType(MessageType type);
+
+    void setUserMap(const std::unordered_map<int, std::string>& userMap);
+
+    void setChatrooms(const std::vector<ChatroomData>& chatrooms);
+
+    void setInbox(const std::vector<std::shared_ptr<MessageInterface>>& inbox);
 
     std::shared_ptr<MessageInterface> build();
 };
