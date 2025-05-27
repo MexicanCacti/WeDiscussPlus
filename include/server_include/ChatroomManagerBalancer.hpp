@@ -3,10 +3,9 @@
 #include "LoadBalancer.hpp"
 #include "MessageInterface.hpp"
 
-template<typename WorkType>
-class ChatroomManagerBalancer : public LoadBalancer<WorkType>{
+class ChatroomManagerBalancer : public LoadBalancer {
     private:
-        virtual std::shared_ptr<Manager<WorkType>> createManager(Server<WorkType>& server) override;
+        virtual std::shared_ptr<Manager> createManager(Server& server) override;
     public:
-        using LoadBalancer<WorkType>::LoadBalancer;
+        using LoadBalancer::LoadBalancer;
 };

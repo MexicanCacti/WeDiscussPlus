@@ -4,14 +4,14 @@
 
 // Initial connection and authentication
 class ConnectMessage : public MessageInterface {
-public:
-    ConnectMessage() { _messageType = MessageType::CONNECT;}
+    public:
+        ConnectMessage() { _messageType = MessageType::CONNECT;}
 
-    ConnectMessage(const std::vector<char>& data, size_t& offset);
+        ConnectMessage(const std::vector<char>& data, size_t& offset);
 
-    std::vector<char> serialize() const override;
+        std::vector<char> serialize() const override;
 
-    void deserialize(const std::vector<char>& data, size_t& offset);
+        void deserialize(const std::vector<char>& data, size_t& offset);
 
-    void printMessage() const override;
-};
+        void printMessage() const override;
+    };

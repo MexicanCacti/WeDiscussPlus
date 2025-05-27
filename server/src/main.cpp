@@ -2,7 +2,6 @@
 #include <string>
 #include <thread>
 #include <atomic>
-#include "Message.hpp"
 #include "Server.hpp"
 
 static const int defaultPort = 3333;
@@ -39,7 +38,7 @@ int main(int argc, char* argv[]) {
     #endif
 
     std::cout << "Starting server on " << ip << ":" << port << "..." << std::endl;
-    auto server = Server<Message>(ip, port);
+    auto server = Server(ip, port);
     
     std::thread serverThread([&server]() {
         try {

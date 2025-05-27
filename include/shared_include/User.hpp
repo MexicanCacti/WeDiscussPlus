@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
-#include "UserMessage.hpp"
+#include "messages/UserMessage.hpp"
 
 class User{
     private:

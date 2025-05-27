@@ -3,25 +3,26 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
-template<typename WorkType>
-void LogManager<WorkType>::setUpDatabaseConnection(){
+void LogManager::setUpDatabaseConnection(){
     // Set up connection to database & set up maps!
 }
 
-template<typename WorkType>
-void LogManager<WorkType>::processWork(WorkType& work) {
+void LogManager::processWork(std::shared_ptr<MessageInterface>& work) {
     try{
         #ifdef _DEBUG   
-            std::cout << "LogManager processing message type: " << WorkType::messageTypeToString(work.getMessageType()) << std::endl;
+            std::cout << "LogManager processing message type: " << MessageInterface::messageTypeToString(work->getMessageType()) << std::endl;
         #endif
             
-        switch(work.getMessageType()){
-            case MessageType::GET_USER_MESSAGES:
+        switch(work->getMessageType()){
+            case MessageType::GET_TO_USER_MESSAGES:
+            case MessageType::GET_FROM_USER_MESSAGES:
             case MessageType::GET_CHATROOM_MESSAGES:
                 answerLogRequest(work);
                 break;
+            case MessageType::STORE_CONNECT_LOG:
+                storeConnectLog(work);
+                break;
             default:
-                storeMessage(work);
                 break;
         }
     } catch (const std::exception& e) {
@@ -30,57 +31,66 @@ void LogManager<WorkType>::processWork(WorkType& work) {
     }
 }   
 
-template<typename WorkType>
-void LogManager<WorkType>::getUserMessages(int userID) {
-    try{
-        // TODO: Get user messages from database
-    } catch (const std::exception& e) {
-        std::cerr << "Error in getUserMessages: " << e.what() << std::endl;
-        throw;
-    }
+void LogManager::getToUserMessages(int userID) {
+
 }
 
-template<typename WorkType>
-void LogManager<WorkType>::getChatroomMessages(int chatroomID) {
-    try{
-        // TODO: Get chatroom messages from database
-    } catch (const std::exception& e) {
-        std::cerr << "Error in getChatroomMessages: " << e.what() << std::endl;
-        throw;
-    }
+void LogManager::getFromUserMessages(int userID) {
+
+}
+void LogManager::getBetweenUsersMessages(int userID1, int userID2) {
+
+}
+void LogManager::getChatroomMessages(int chatroomID) {
+
+}
+void LogManager::getChatroomMessagesFromUser(int chatroomID, int userID) {
+
 }
 
-template<typename WorkType>
-void LogManager<WorkType>::answerLogRequest(WorkType& message) {
-    MessageBuilder<WorkType> responseBuilder(&message);
-    try{
-        #ifdef _MOCK_TESTING
-        {
-            std::string responseContent;
-            switch(message.getMessageType()){
-                case MessageType::GET_USER_MESSAGES:
-                    responseContent = "getUserMessages";
-                    break;
-                case MessageType::GET_CHATROOM_MESSAGES:
-                    responseContent = "getChatroomMessages";
-                    break;
-                default:
-                    return;
-            }
-            responseBuilder.setMessageContents(responseContent);
-            responseBuilder.setSuccessBit(true);
-            WorkType responseMessage(&responseBuilder);
-            this->_server.sendMessageToClient(message.getFromUserID(), responseMessage);
-            return;
-        }
-        #endif
-
-        switch(message.getMessageType()){
+void LogManager::answerLogRequest(std::shared_ptr<MessageInterface>& message) {
+    #ifdef _MOCK_TESTING
+        std::string functionCalled;
+        switch(message->getMessageType()){
             case MessageType::GET_USER_MESSAGES:
-                getUserMessages(message.getFromUserID());
+                functionCalled = "getUserMessages";
+                break;
+            case MessageType::GET_FROM_USER_MESSAGES:
+                functionCalled = "getFromUserMessages";
+                break;
+            case MessageType::GET_BETWEEN_USERS_MESSAGES:
+                functionCalled = "getBetweenUsersMessages";
                 break;
             case MessageType::GET_CHATROOM_MESSAGES:
-                getChatroomMessages(message.getFromUserID());
+                functionCalled = "getChatroomMessages";
+                break;
+            case MessageType::GET_CHATROOM_MESSAGES_FROM_USER:
+                functionCalled = "getChatroomMessagesFromUser";
+                break;
+            default:
+                return;
+        }
+        sendRoutingTestMessage(message, functionCalled);
+        return;
+    #endif
+
+    MessageBuilder responseBuilder;
+    try{
+        switch(message->getMessageType()){
+            case MessageType::GET_TO_USER_MESSAGES:
+                getToUserMessages(message->getFromUserID());
+                break;
+            case MessageType::GET_FROM_USER_MESSAGES:
+                getFromUserMessages(message->getFromUserID());
+                break;
+            case MessageType::GET_BETWEEN_USERS_MESSAGES:
+                getBetweenUsersMessages(message->getFromUserID(), message->getToUserID());
+                break;
+            case MessageType::GET_CHATROOM_MESSAGES:
+                getChatroomMessages(message->getFromUserID());
+                break;
+            case MessageType::GET_CHATROOM_MESSAGES_FROM_USER:
+                getChatroomMessagesFromUser(message->getFromUserID(), message->getToUserID());
                 break;
             default:
                 break;
@@ -88,21 +98,12 @@ void LogManager<WorkType>::answerLogRequest(WorkType& message) {
     } catch (const std::exception& e) {
         std::cerr << "Error in answerLogRequest: " << e.what() << std::endl;
         responseBuilder.setSuccessBit(false);
-        WorkType responseMessage(&responseBuilder);
-        this->_server.sendMessageToClient(message.getFromUserID(), responseMessage);
-        throw;
+        auto responseMessage = responseBuilder.build();
+        this->_server.sendMessageToClient(message->getFromUserID(), responseMessage);
+        throw std::runtime_error("Error in answerLogRequest: " + std::string(e.what()));
     }
 }
 
-template<typename WorkType>
-void LogManager<WorkType>::storeMessage(WorkType& message) {
-    try{
-        // TODO: Store message in database. MessageType indicates what type of message it is.
-    } catch (const std::exception& e) {
-        std::cerr << "Error in storeMessage: " << e.what() << std::endl;
-        throw;
-    }
+void LogManager::storeConnectLog(std::shared_ptr<MessageInterface>& message){
+    // TODO: Implement
 }
-
-template class LogManager<Message>;
-template class LogManager<MockMessage>;

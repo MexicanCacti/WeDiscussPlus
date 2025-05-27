@@ -8,30 +8,20 @@
 #include <asio.hpp>
 #include "Database.hpp"
 #include "MessageInterface.hpp"
+#include "MessageBuilder.hpp"
 
 using asio::ip::tcp;
 using namespace std::chrono_literals;
 
 class Server;
 
+// TODO: Fix how database pointer is handled
 class ManagerInterface {
     protected:
         Server& _server;
         std::mutex _processQueueMutex;
         std::atomic<bool> _shouldDoWork = true;
         std::shared_ptr<Database> _db; 
-        
-        bool initializeDatabase(const std::string& dbPath) {
-            if (!_db) {
-                _db = std::make_shared<Database>();
-            }
-            auto dbPointer = _db->getDBPointer(dbPath);
-            if (!dbPointer) {
-                return false;
-            }
-            _db->initDatabase(dbPath);
-            return true;
-        }
 
     public:
         ManagerInterface(Server& server) : _server(server) {};
@@ -43,10 +33,7 @@ class ManagerInterface {
         
         Database& getDatabase() { return *_db; }
         bool isDatabaseInitialized() const { return _db != nullptr; }
-        
-        void setDatabase(std::shared_ptr<Database> db) {
-            _db = db;
-        }
+        virtual void sendRoutingTestMessage(std::shared_ptr<MessageInterface>& work, const std::string& functionName) = 0;
 };
 
 class Manager : public ManagerInterface {
@@ -59,4 +46,5 @@ class Manager : public ManagerInterface {
         void handleClient() override;
         size_t getQueueSize() override;
         virtual void setUpDatabaseConnection() override = 0;
+        void sendRoutingTestMessage(std::shared_ptr<MessageInterface>& work, const std::string& functionName) override;
 };

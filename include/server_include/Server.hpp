@@ -50,7 +50,6 @@ class Server {
 
         // Core server operations
         void listenForConnections();
-        void shutdown();
         
         // Client registration
         void registerClient(std::shared_ptr<tcp::socket> clientSocket);
@@ -64,7 +63,7 @@ class Server {
 
     public:
         Server(const std::string& ip, int port);
-        ~Server() {shutdown();}
+        ~Server() {stopServer();}
 
         // Core server operations
         void startServer();
@@ -98,5 +97,3 @@ class Server {
         // Message handling
         void addMessageToLogBalancer(std::shared_ptr<MessageInterface> message);
 };
-
-#endif

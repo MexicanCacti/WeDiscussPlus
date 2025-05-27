@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
-#include "ChatroomMessage.hpp"
+#include "messages/ChatroomMessage.hpp"
 
 class Chatroom {
 private:

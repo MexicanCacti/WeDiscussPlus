@@ -31,3 +31,30 @@ size_t Manager::getQueueSize() {
     std::lock_guard<std::mutex> lock(this->_processQueueMutex);
     return _processQueue.size();
 }
+
+void Manager::sendRoutingTestMessage(std::shared_ptr<MessageInterface>& work, const std::string& functionName) {
+    MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(work->getMessageType());
+    responseBuilder.setMessageContents(functionName);
+    responseBuilder.setSuccessBit(true);
+    responseBuilder.setFromUser(work->getFromUsername(), work->getFromUserID());
+    responseBuilder.setToChatroom(work->getToChatroomID());
+    auto responseMessage = responseBuilder.build();
+    _server.sendMessageToClient(work->getToUserID(), responseMessage);
+    try {
+        responseBuilder.setMessageType(work->getMessageType());
+        responseBuilder.setMessageContents(functionName);
+        responseBuilder.setSuccessBit(true);
+        responseBuilder.setFromUser(work->getFromUsername(), work->getFromUserID());
+        responseBuilder.setToChatroom(work->getToChatroomID());
+        auto responseMessage = responseBuilder.build();
+        _server.sendMessageToClient(work->getToUserID(), responseMessage);
+    } catch (const std::exception& e) {
+        std::cerr << "Error in sendRoutingTestMessage: " << e.what() << std::endl;   
+        responseBuilder.setSuccessBit(false);
+        responseBuilder.setMessageContents("sendRoutingTestMessage");
+        auto failedMessage = responseBuilder.build();
+        _server.sendMessageToClient(work->getToUserID(), failedMessage);
+        throw std::runtime_error("Error in sendRoutingTestMessage: " + std::string(e.what()));
+    }
+}

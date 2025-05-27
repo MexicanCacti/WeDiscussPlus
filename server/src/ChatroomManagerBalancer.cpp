@@ -1,9 +1,5 @@
 #include "ChatroomManagerBalancer.hpp"
 
-template<typename WorkType>
-std::shared_ptr<Manager<WorkType>> ChatroomManagerBalancer<WorkType>::createManager(Server<WorkType>& server){
-    return std::make_shared<ChatroomManager<WorkType>>(server);
+std::shared_ptr<Manager> ChatroomManagerBalancer::createManager(Server& server){
+    return std::make_shared<ChatroomManager>(server);
 }
-    
-template class ChatroomManagerBalancer<Message>;
-template class ChatroomManagerBalancer<MockMessage>;

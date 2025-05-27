@@ -1,11 +1,11 @@
 #pragma once
 
 #include "MessageInterface.hpp"
-#include "ConnectMessage.hpp"
-#include "UserMessage.hpp"
-#include "ChatroomMessage.hpp"
-#include "AuthMessage.hpp"
-#include "AuthResponseMessage.hpp"
+#include "messages/ConnectMessage.hpp"
+#include "messages/AuthMessage.hpp"
+#include "messages/AuthResponseMessage.hpp"
+#include "messages/UserMessage.hpp"
+#include "messages/ChatroomMessage.hpp"
 #include "Chatroom.hpp"
 #include "User.hpp"
 #include <memory>

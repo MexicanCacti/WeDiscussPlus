@@ -53,12 +53,18 @@ std::string MessageInterface::messageTypeToString(const MessageType& messageType
             return "SEND_MESSAGE_TO_CHATROOM";
         case MessageType::REMOVE_USER_FROM_CHATROOM:
             return "REMOVE_USER_FROM_CHATROOM";
-        case MessageType::GET_USER_MESSAGES:
-            return "GET_USER_MESSAGES";
+        case MessageType::GET_TO_USER_MESSAGES:
+            return "GET_TO_USER_MESSAGES";
+        case MessageType::GET_FROM_USER_MESSAGES:
+            return "GET_FROM_USER_MESSAGES";
+        case MessageType::GET_BETWEEN_USERS_MESSAGES:
+            return "GET_BETWEEN_USERS_MESSAGES";
         case MessageType::GET_CHATROOM_MESSAGES:
             return "GET_CHATROOM_MESSAGES";
-        case MessageType::STORE_MESSAGE:
-            return "STORE_MESSAGE";
+        case MessageType::GET_CHATROOM_MESSAGES_FROM_USER:
+            return "GET_CHATROOM_MESSAGES_FROM_USER";
+        case MessageType::STORE_CONNECT_LOG:
+            return "STORE_CONNECT_LOG";
         case MessageType::UNDEFINED:
             return "UNDEFINED";
         case MessageType::TEST:

@@ -1,16 +1,14 @@
 #include "LoadBalancer.hpp"
 #include "Server.hpp"
 
-template<typename WorkType>
-void LoadBalancer<WorkType>::initManagers(const int managerAmount, Server<WorkType>& server){
+void LoadBalancer::initManagers(const int managerAmount, Server& server){
     for(int i = 0; i < managerAmount; ++i){
         auto manager = createManager(server);
         addManager(++_managerID, manager);
     }
 }
 
-template<typename WorkType>
-void LoadBalancer<WorkType>::addManager(int id, std::shared_ptr<Manager<WorkType>> manager) {
+void LoadBalancer::addManager(int id, std::shared_ptr<Manager> manager) {
     _managers[id] = manager;
     _managerThreads[id] = std::thread([this, id, manager](){
         try {
@@ -23,8 +21,7 @@ void LoadBalancer<WorkType>::addManager(int id, std::shared_ptr<Manager<WorkType
     _managerThreads[id].detach();
 }
 
-template<typename WorkType>
-void LoadBalancer<WorkType>::findBestManager(WorkType& work){
+void LoadBalancer::findBestManager(std::shared_ptr<MessageInterface>& work){
     int bestManagerID = -1;
     size_t minQueueSize = SIZE_MAX;
 
@@ -41,28 +38,19 @@ void LoadBalancer<WorkType>::findBestManager(WorkType& work){
     }
 }
 
-template<typename WorkType>
-void LoadBalancer<WorkType>::assignWork(int managerID, WorkType& work){
+void LoadBalancer::assignWork(int managerID, std::shared_ptr<MessageInterface>& work){
     auto it = _managers.find(managerID);
     if(it != _managers.end()){
         it->second->addWork(work);
     }
 }
 
-template<typename WorkType>
-void LoadBalancer<WorkType>::pushWork(WorkType& work){
+void LoadBalancer::pushWork(std::shared_ptr<MessageInterface>& work){
     std::lock_guard<std::mutex> queueLock(_workQueueMutex);
     _workQueue.push(work);
 }
 
-template<typename WorkType>
-void LoadBalancer<WorkType>::pushWork(WorkType&& work){
-    std::lock_guard<std::mutex> queueLock(_workQueueMutex);
-    _workQueue.push(std::move(work));
-}
-
-template<typename WorkType>
-void LoadBalancer<WorkType>::waitForWork(){
+void LoadBalancer::waitForWork(){
     if(!_isRunning) {
         _isRunning = true;
         
@@ -88,8 +76,7 @@ void LoadBalancer<WorkType>::waitForWork(){
     }
 }
 
-template<typename WorkType>
-void LoadBalancer<WorkType>::stopAllThreads(){
+void LoadBalancer::stopAllThreads(){
     _isRunning = false;
     
     for(auto& [id, manager] : _managers){
@@ -108,10 +95,6 @@ void LoadBalancer<WorkType>::stopAllThreads(){
     _managers.clear();
 }
 
-template<typename WorkType>
-LoadBalancer<WorkType>::~LoadBalancer(){
+LoadBalancer::~LoadBalancer(){
     stopAllThreads();
 }
-
-template class LoadBalancer<Message>;
-template class LoadBalancer<MockMessage>;

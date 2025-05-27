@@ -1,9 +1,9 @@
 #pragma once
 #include "MessageInterface.hpp"
-#include "ConnectMessage.hpp"
-#include "UserMessage.hpp"
-#include "ChatroomMessage.hpp"
-#include "AuthMessage.hpp"
+#include "messages/ConnectMessage.hpp"
+#include "messages/UserMessage.hpp"
+#include "messages/ChatroomMessage.hpp"
+#include "messages/AuthMessage.hpp"
 #include <stdexcept>
 
 class MessageFactory {

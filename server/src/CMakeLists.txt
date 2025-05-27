@@ -10,6 +10,7 @@ target_include_directories(server PUBLIC
     ${CMAKE_SOURCE_DIR}/include/client_include
     ${CMAKE_SOURCE_DIR}/include/server_include
     ${CMAKE_SOURCE_DIR}/include/shared_include
+    ${CMAKE_SOURCE_DIR}/include/shared_include/messages
     ${CMAKE_SOURCE_DIR}/libs/asio-1.30.2/include
     ${CMAKE_SOURCE_DIR}/libs/sqlite3
 )
