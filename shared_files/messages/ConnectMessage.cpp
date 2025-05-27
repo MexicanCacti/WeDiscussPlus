@@ -1,7 +1,6 @@
 #include "ConnectMessage.hpp"
 
 ConnectMessage::ConnectMessage(const std::vector<char>& data, size_t& offset) {
-    _messageType = MessageType::CONNECT;
     deserialize(data, offset);
 }
 
@@ -18,7 +17,7 @@ std::vector<char> ConnectMessage::serialize() const {
 }
 
 void ConnectMessage::deserialize(const std::vector<char>& data, size_t& offset) {
-    _success_bit = deserializeInt(data, offset) == 1;
+    _success_bit = deserializeInt(data, offset);
     _messageContents = deserializeString(data, offset);
     _to_user_name = deserializeString(data, offset);
     _to_user_id = deserializeInt(data, offset);

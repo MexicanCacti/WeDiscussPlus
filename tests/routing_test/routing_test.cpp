@@ -3,8 +3,10 @@
 #include "server_include/UserManager.hpp"
 #include "server_include/ChatroomManager.hpp"
 #include "server_include/LogManager.hpp"
-#include "shared_include/Message.hpp"
-#include "shared_include/MessageBuilder.hpp"
+#include "MessageInterface.hpp"
+#include "MessageBuilder.hpp"
+#include "MessageFactory.hpp"
+
 #include <memory>
 #include <thread>
 #include <iostream>
@@ -20,26 +22,27 @@ asio::io_context context;
 tcp::resolver resolver(context);
 auto endpoints = resolver.resolve("127.0.0.1", "3333");
 
-bool successBit = true;
-std::string messageContents = "Test Contents";
-std::string toUsername = "Test ToUsername";
-int toUserID = 99; 
-std::string fromUsername = "Test FromUsername";
+const bool successBit = true;
+const std::string messageContents = "Test Contents";
+const std::string toUsername = "Test ToUsername";
+int toUserID = 99;
+const std::string fromUsername = "Test FromUsername";
 int fromUserID = 100;
-int toChatroomID = 0;
-int fromChatroomID = 0;
+const int toChatroomID = 1;
 
-void buildMessage(MessageBuilder<MockMessage>&, const bool, const std::string&, const std::string&, const int, const std::string&, const int, const int, const int, const MessageType);
-MockMessage readMessageFromSocket(tcp::socket& socket);
+void buildMessage(MessageBuilder&, const bool, const std::string&, const std::string&, const int, const std::string&, const int, const int, const MessageType);
+std::shared_ptr<MessageInterface> readMessageFromSocket(tcp::socket& socket);
+bool sendMessageToServer(tcp::socket& socket, std::shared_ptr<MessageInterface> message);
 
 class RoutingTest : public ::testing::Test {
 protected:
-    static std::unique_ptr<Server<MockMessage>> _server;
+    static std::unique_ptr<Server> _server;
     static std::thread _serverThread;
 
     static void SetUpTestSuite() {
         try {
-            _server = std::make_unique<Server<MockMessage>>("127.0.0.1", 3333);
+            std::cout << "Creating server..." << std::endl;
+            _server = std::make_unique<Server>("127.0.0.1", 3333);
             
             std::promise<void> serverStarted;
             std::future<void> serverStartedFuture = serverStarted.get_future();
@@ -59,10 +62,7 @@ protected:
 
             std::cout << "Waiting for server to start..." << std::endl;
             try {
-                auto status = serverStartedFuture.wait_for(2s);
-                if (status == std::future_status::timeout) {
-                    throw std::runtime_error("Server failed to start within timeout period");
-                }
+                serverStartedFuture.wait();
                 std::cout << "Server started successfully" << std::endl;
                 _serverThread.detach();  // Detach the thread so it can run independently
             } catch (const std::exception& e) {
@@ -88,33 +88,31 @@ protected:
             sendSocket.connect(tcp::endpoint(asio::ip::address::from_string("127.0.0.1"), 3333));
             std::cout << "Initial socket created successfully" << std::endl;
 
-            MessageBuilder<MockMessage> sendBuilder;
-            buildMessage(sendBuilder, successBit, "CONNECT", toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, MessageType::CONNECT);
-            MockMessage sendMessage(&sendBuilder);
-            std::cout << "SEND MESSAGE BUILT: MESSAGE TYPE: " << MockMessage::messageTypeToString(sendMessage.getMessageType()) << std::endl;
-            std::vector<char> sendData = sendMessage.serialize();
-            asio::write(sendSocket, asio::buffer(sendData));
+            MessageBuilder sendBuilder;
+            buildMessage(sendBuilder, successBit, "CONNECT", toUsername, toUserID, fromUsername, fromUserID, toChatroomID, MessageType::CONNECT);
+            std::shared_ptr<MessageInterface> sendMessage = sendBuilder.build();
+            sendMessageToServer(sendSocket, sendMessage);
             std::cout << "CONNECT message sent successfully" << std::endl;
 
-            MockMessage connectResponse = readMessageFromSocket(sendSocket);
-            EXPECT_EQ(connectResponse.getMessageType(), MessageType::CONNECT);
-            EXPECT_EQ(connectResponse.getMessageContents(), "server");
+            std::shared_ptr<MessageInterface> connectResponse = readMessageFromSocket(sendSocket);
+            EXPECT_EQ(connectResponse->getMessageType(), MessageType::CONNECT);
+            EXPECT_EQ(connectResponse->getMessageContents(), "server");
             std::cout << "Connect response verified successfully" << std::endl;
-            fromUserID = connectResponse.getFromUserID();
+            fromUserID = connectResponse->getFromUserID();
+            toUserID = connectResponse->getToUserID();
 
             recvSocket.connect(tcp::endpoint(asio::ip::address::from_string("127.0.0.1"), 3333));
             std::cout << "Receive socket created successfully" << std::endl;
 
-            MessageBuilder<MockMessage> recvBuilder;
-            buildMessage(recvBuilder, successBit, "AUTHENTICATE", toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, MessageType::AUTHENTICATE);
-            MockMessage recvMessage(&recvBuilder);
-            std::vector<char> recvData = recvMessage.serialize();
-            asio::write(recvSocket, asio::buffer(recvData));
+            MessageBuilder recvBuilder;
+            buildMessage(recvBuilder, successBit, "AUTHENTICATE", toUsername, toUserID, fromUsername, fromUserID, toChatroomID, MessageType::AUTHENTICATE);
+            std::shared_ptr<MessageInterface> recvMessage = recvBuilder.build();
+            sendMessageToServer(recvSocket, recvMessage);
             std::cout << "AUTHENTICATE message sent successfully" << std::endl;
 
-            MockMessage authenticateResponse = readMessageFromSocket(recvSocket);
-            EXPECT_EQ(authenticateResponse.getMessageType(), MessageType::AUTHENTICATE);
-            EXPECT_EQ(authenticateResponse.getMessageContents(), "authUser");
+            std::shared_ptr<MessageInterface> authenticateResponse = readMessageFromSocket(recvSocket);
+            EXPECT_EQ(authenticateResponse->getMessageType(), MessageType::AUTHENTICATE);
+            EXPECT_EQ(authenticateResponse->getMessageContents(), "authUser");
             std::cout << "AUTHENTICATE response verified successfully" << std::endl;
 
             std::cout << "Connection establishment completed" << std::endl;
@@ -128,7 +126,7 @@ private:
 };
 
 // Static member definitions for RoutingTest
-std::unique_ptr<Server<MockMessage>> RoutingTest::_server;
+std::unique_ptr<Server> RoutingTest::_server;
 std::thread RoutingTest::_serverThread;
 
 TEST_F(RoutingTest, BasicConnection) {
@@ -157,26 +155,25 @@ TEST_F(RoutingTest, UserManagerRouting) {
         std::cout << "Connection established successfully" << std::endl;
 
         std::vector<std::pair<MessageType, std::string>> userManagerTypes = {
-            {MessageType::LOGOUT, "logoutUser"},
             {MessageType::ADD_USER, "addUser"},
             {MessageType::CHANGE_USER_PASSWORD, "changeUserPassword"},
             {MessageType::CHANGE_USER_NAME, "changeUserName"},
             {MessageType::DELETE_USER, "deleteUser"},
             {MessageType::SEND_MESSAGE_TO_USER, "sendMessageToUser"},
-            {MessageType::AUTHENTICATE, "authUser"},
-            {MessageType::CONNECT, "server"}
+            {MessageType::AUTHENTICATE, "server"},
+            {MessageType::CONNECT, "server"},
+            {MessageType::LOGOUT, "logoutUser"}
         };
 
         for(const auto& [messageType, expectedFunction] : userManagerTypes) {
-            std::cout << "\nTesting message type: " << MockMessage::messageTypeToString(messageType) << std::endl;
+            std::cout << "\nTesting message type: " << MessageInterface::messageTypeToString(messageType) << std::endl;
             
-            MessageBuilder<MockMessage> builder;
-            buildMessage(builder, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
-            MockMessage message(&builder);
-            std::vector<char> data = message.serialize();
+            MessageBuilder builder;
+            buildMessage(builder, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, messageType);
+            std::shared_ptr<MessageInterface> message = builder.build();
             
             try {
-                asio::write(sendSocket, asio::buffer(data));
+                sendMessageToServer(sendSocket, message);
                 std::cout << "Message sent successfully" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "FAILED to send message: " << e.what() << std::endl;
@@ -184,9 +181,9 @@ TEST_F(RoutingTest, UserManagerRouting) {
             }
 
             try {
-                MockMessage response = readMessageFromSocket(recvSocket);
-                EXPECT_EQ(response.getMessageContents(), expectedFunction);
-                std::cout << "SUCCESS: " << response.getMessageContents() << " | " << expectedFunction << std::endl;
+                std::shared_ptr<MessageInterface> response = readMessageFromSocket(recvSocket);
+                EXPECT_EQ(response->getMessageContents(), expectedFunction);
+                std::cout << "RESULT: " << response->getMessageContents() << " | " << expectedFunction << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "FAILED to read response: " << e.what() << std::endl;
                 throw;
@@ -217,12 +214,11 @@ TEST_F(RoutingTest, ChatroomManagerRouting) {
         };
 
         for(const auto& [messageType, expectedFunction] : chatroomManagerTypes) {
-            MessageBuilder<MockMessage> builder;
-            buildMessage(builder, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
-            MockMessage message(&builder);
-            std::vector<char> data = message.serialize();
+            MessageBuilder builder;
+            buildMessage(builder, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, messageType);
+            std::shared_ptr<MessageInterface> message = builder.build();
             try {
-                asio::write(sendSocket, asio::buffer(data));
+                sendMessageToServer(sendSocket, message);
                 std::cout << "Message sent successfully" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "FAILED to send message: " << e.what() << std::endl;
@@ -230,9 +226,9 @@ TEST_F(RoutingTest, ChatroomManagerRouting) {
             }
 
             try {
-                MockMessage response = readMessageFromSocket(recvSocket);
-                EXPECT_EQ(response.getMessageContents(), expectedFunction);
-                std::cout << "SUCCESS: " << response.getMessageContents() << " | " << expectedFunction << std::endl;
+                std::shared_ptr<MessageInterface> response = readMessageFromSocket(recvSocket);
+                EXPECT_EQ(response->getMessageContents(), expectedFunction);
+                std::cout << "RESULT: " << response->getMessageContents() << " | " << expectedFunction << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "FAILED to read response: " << e.what() << std::endl;
                 throw;
@@ -253,17 +249,19 @@ TEST_F(RoutingTest, LogManagerRouting) {
         establishConnection(sendSocket, recvSocket);
 
         std::vector<std::pair<MessageType, std::string>> logManagerTypes = {
-            {MessageType::GET_USER_MESSAGES, "getUserMessages"},
-            {MessageType::GET_CHATROOM_MESSAGES, "getChatroomMessages"}
+            {MessageType::GET_TO_USER_MESSAGES, "getToUserMessages"},
+            {MessageType::GET_FROM_USER_MESSAGES, "getFromUserMessages"},
+            {MessageType::GET_BETWEEN_USERS_MESSAGES, "getBetweenUsersMessages"},
+            {MessageType::GET_CHATROOM_MESSAGES, "getChatroomMessages"},
+            {MessageType::GET_CHATROOM_MESSAGES_FROM_USER, "getChatroomMessagesFromUser"},
         };
 
         for(const auto& [messageType, expectedFunction] : logManagerTypes) {
-            MessageBuilder<MockMessage> builder;
-            buildMessage(builder, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, fromChatroomID, messageType);
-            MockMessage message(&builder);
-            std::vector<char> data = message.serialize();
+            MessageBuilder builder;
+            buildMessage(builder, successBit, messageContents, toUsername, toUserID, fromUsername, fromUserID, toChatroomID, messageType);
+            std::shared_ptr<MessageInterface> message = builder.build();
             try {
-                asio::write(sendSocket, asio::buffer(data));
+                sendMessageToServer(sendSocket, message);
                 std::cout << "Message sent successfully" << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "FAILED to send message: " << e.what() << std::endl;
@@ -271,9 +269,9 @@ TEST_F(RoutingTest, LogManagerRouting) {
             }
 
             try {
-                MockMessage response = readMessageFromSocket(recvSocket);
-                EXPECT_EQ(response.getMessageContents(), expectedFunction);
-                std::cout << "SUCCESS: " << response.getMessageContents() << " | " << expectedFunction << std::endl;
+                std::shared_ptr<MessageInterface> response = readMessageFromSocket(recvSocket);
+                EXPECT_EQ(response->getMessageContents(), expectedFunction);
+                std::cout << "RESULT: " << response->getMessageContents() << " | " << expectedFunction << std::endl;
             } catch (const std::exception& e) {
                 std::cerr << "FAILED to read response: " << e.what() << std::endl;
                 throw;
@@ -286,7 +284,7 @@ TEST_F(RoutingTest, LogManagerRouting) {
     }    
 }
 
-MockMessage readMessageFromSocket(tcp::socket& socket) {
+std::shared_ptr<MessageInterface> readMessageFromSocket(tcp::socket& socket) {
     int msgSize = 0;
     try {
         asio::read(socket, asio::buffer(&msgSize, sizeof(int)));
@@ -311,7 +309,8 @@ MockMessage readMessageFromSocket(tcp::socket& socket) {
     }
 
     try {
-        auto message = MockMessage::deserialize(buffer);
+        size_t offset = 0;
+        auto message = MessageFactory::deserialize(buffer, offset);
         std::cout << "Message deserialized successfully" << std::endl;
         return message;
     } catch (const std::exception& e) {
@@ -320,14 +319,24 @@ MockMessage readMessageFromSocket(tcp::socket& socket) {
     }
 }
 
-void buildMessage(MessageBuilder<MockMessage>& messageBuilder, const bool successBit, const std::string& messageContents, const std::string& toUsername, const int toUserID, const std::string& fromUsername, const int fromUserID, const int toChatroomID, const int fromChatroomID, const MessageType messageType) {
+void buildMessage(MessageBuilder& messageBuilder, const bool successBit, const std::string& messageContents, const std::string& toUsername, const int toUserID, const std::string& fromUsername, const int fromUserID, const int toChatroomID, const MessageType messageType) {
     messageBuilder.setSuccessBit(successBit);
     messageBuilder.setMessageContents(messageContents);
-    messageBuilder.setToUsername(toUsername);
-    messageBuilder.setToUserID(toUserID);
-    messageBuilder.setFromUsername(fromUsername);
-    messageBuilder.setFromUserID(fromUserID);
-    messageBuilder.setToChatroomID(toChatroomID);
-    messageBuilder.setFromChatroomID(fromChatroomID);
+    messageBuilder.setToUser(toUsername, toUserID);
+    messageBuilder.setFromUser(fromUsername, fromUserID);
+    messageBuilder.setToChatroom(toChatroomID);
     messageBuilder.setMessageType(messageType);
+}
+
+bool sendMessageToServer(tcp::socket& socket, std::shared_ptr<MessageInterface> message) {
+    try {
+        std::vector<char> data = message->serialize();
+        int msgSize = static_cast<int>(data.size());
+        asio::write(socket, asio::buffer(&msgSize, sizeof(int)));
+        asio::write(socket, asio::buffer(data));
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Error sending message to Server: " << e.what() << std::endl;
+        return false;
+    }
 }

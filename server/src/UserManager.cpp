@@ -15,6 +15,9 @@ void UserManager::processWork(std::shared_ptr<MessageInterface>& work) {
     #ifdef _DEBUG
         std::cout << "UserManager processing message type: " << MessageInterface::messageTypeToString(work->getMessageType()) << std::endl;
     #endif
+    #ifdef _MOCK_TESTING
+        std::cout << "Mock testing enabled for UserManager" << std::endl;
+    #endif
     try {
         switch(work->getMessageType()) {
             case MessageType::AUTHENTICATE:
@@ -47,13 +50,21 @@ void UserManager::processWork(std::shared_ptr<MessageInterface>& work) {
 }
 
 void UserManager::authUser(std::shared_ptr<MessageInterface>& work){
+    int tempID = work->getFromUserID();
     #ifdef _MOCK_TESTING
+        if (_clientHandlerStarted.find(tempID) == _clientHandlerStarted.end()) {
+            std::thread clientThread([this, tempID](){
+                this->_server.handleClient(tempID);
+            });
+            clientThread.detach();
+            _clientHandlerStarted[tempID] = true;
+        }
         sendRoutingTestMessage(work, "authUser");
         return;
     #endif
 
     MessageBuilder responseBuilder;
-    int tempID = work->getFromUserID();
+    responseBuilder.setMessageType(MessageType::AUTH_RESPONSE);
     try {
         bool areSocketsRegistered = (this->_server.isToClientSocketRegistered(tempID) && this->_server.isFromClientSocketRegistered(tempID));
         if(!areSocketsRegistered) {
@@ -70,29 +81,29 @@ void UserManager::authUser(std::shared_ptr<MessageInterface>& work){
         // 4. Send response to client with real clientID
         // 5. Remove tempID mapping
 
-        // Start client handler thread before any response handling
-        // Only start the thread if it hasn't been started yet
         if (_clientHandlerStarted.find(userID) == _clientHandlerStarted.end()) {
             std::thread clientThread([this, userID](){
                 this->_server.handleClient(userID);
             });
             clientThread.detach();
             _clientHandlerStarted[userID] = true;
-        }
 
-        responseBuilder.setSuccessBit(true);
-        responseBuilder.setMessageContents("authUser");
-        responseBuilder.setFromUser(work->getFromUsername(), userID);
-        auto responseMessage = responseBuilder.build();
-        this->_server.sendMessageToClient(userID, responseMessage);
+            responseBuilder.setSuccessBit(true);
+            responseBuilder.setMessageContents("authUser");
+            responseBuilder.setFromUser("Server", 0);
+            responseBuilder.setToUser(work->getFromUsername(), userID);
+            auto responseMessage = responseBuilder.build();
+            this->_server.sendMessageToClient(userID, responseMessage);
+
+            // TODO: remove tempID mapping after sockets are moved to real clientID
+        }
         
-        // Only remove tempID mapping after sockets are moved to real clientID
-        // this->_server.removeClientSocket(tempID);  // Commented out until socket migration is implemented
     } catch (const std::exception& e) {
         std::cerr << "Error in authUser: " << e.what() << std::endl;
         responseBuilder.setSuccessBit(false);
         responseBuilder.setMessageContents("authUser");
-        responseBuilder.setFromUser(work->getFromUsername(), tempID);
+        responseBuilder.setFromUser("Server", 0);
+        responseBuilder.setToUser(work->getFromUsername(), tempID);
         auto failedMessage = responseBuilder.build();
         this->_server.sendMessageToClient(tempID, failedMessage);
         // Only remove socket after sending error response
@@ -108,13 +119,22 @@ void UserManager::logoutUser(std::shared_ptr<MessageInterface>& work){
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::LOGOUT);
     int userID = work->getFromUserID();
     try {
         // TODO: Implement logout logic
         responseBuilder.setMessageContents("logoutUser");
         responseBuilder.setSuccessBit(true);
+        responseBuilder.setFromUser(work->getFromUsername(), userID);
         auto responseMessage = responseBuilder.build();
-        this->_server.sendMessageToClient(userID, responseMessage);
+        
+        // Send response first
+        bool sendSuccess = this->_server.sendMessageToClient(userID, responseMessage);
+        if (!sendSuccess) {
+            throw std::runtime_error("Failed to send logout response");
+        }
+        
+        // Only remove socket after successful response
         this->_server.removeClientSocket(userID);
         _clientHandlerStarted.erase(userID);
     } catch (const std::exception& e) {
@@ -123,10 +143,12 @@ void UserManager::logoutUser(std::shared_ptr<MessageInterface>& work){
         responseBuilder.setMessageContents("logoutUser");
         responseBuilder.setFromUser(work->getFromUsername(), userID);
         auto failedMessage = responseBuilder.build();
+        
+        // Try to send error response before cleanup
         this->_server.sendMessageToClient(userID, failedMessage);
-
+        
+        // Clean up even if there's an error
         this->_server.removeClientSocket(userID);
-        // Clean up client handler even if there's an error
         _clientHandlerStarted.erase(userID);
     }
 }
@@ -138,6 +160,7 @@ void UserManager::addUser(std::shared_ptr<MessageInterface>& work){
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::ADD_USER);
     int userID = work->getFromUserID();
     try {
 
@@ -153,7 +176,6 @@ void UserManager::addUser(std::shared_ptr<MessageInterface>& work){
             _usernameToUserID[username] = newUserID;
             _userIDToUsername[newUserID] = username;
         }
-        
         responseBuilder.setSuccessBit(true);
         responseBuilder.setMessageContents("addUser");
         auto responseMessage = responseBuilder.build();
@@ -175,6 +197,7 @@ void UserManager::changeUserPassword(std::shared_ptr<MessageInterface>& work){
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::CHANGE_USER_PASSWORD);
     int userID = work->getFromUserID();
     try {
         // TODO: Implement changeUserPassword logic
@@ -199,6 +222,7 @@ void UserManager::changeUserName(std::shared_ptr<MessageInterface>& work){
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::CHANGE_USER_NAME);
     int userID = work->getFromUserID();
     try {
         // TODO: Implement changeUserName logic
@@ -223,6 +247,7 @@ void UserManager::deleteUser(std::shared_ptr<MessageInterface>& work){
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::DELETE_USER);
     int userID = work->getFromUserID();
     try {
         // TODO: Implement deleteUser logic... Remove from database, force logout if necessary.
@@ -247,11 +272,14 @@ void UserManager::sendMessageToUser(std::shared_ptr<MessageInterface>& work){
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::SEND_MESSAGE_TO_USER);
     int userID = work->getFromUserID();
     try {
         // TODO: Implement sendMessageToUser logic
         responseBuilder.setSuccessBit(true);
-        responseBuilder.setMessageContents("sendMessageToUser");
+        responseBuilder.setMessageContents("Message received");
+        responseBuilder.setFromUser("Server", 0);
+        responseBuilder.setToUser(work->getFromUsername(), userID);
         auto responseMessage = responseBuilder.build();
         this->_server.sendMessageToClient(userID, responseMessage);   
     } catch (const std::exception& e) {

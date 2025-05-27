@@ -2,7 +2,6 @@
 #include <iostream>
 
 ChatroomMessage::ChatroomMessage(const std::vector<char>& data, size_t& offset) {
-    _messageType = MessageType::SEND_MESSAGE_TO_CHATROOM;
     deserialize(data, offset);
 }
 
@@ -18,7 +17,7 @@ std::vector<char> ChatroomMessage::serialize() const {
 }
 
 void ChatroomMessage::deserialize(const std::vector<char>& data, size_t& offset) {
-    _success_bit = deserializeInt(data, offset) == 1;
+    _success_bit = deserializeInt(data, offset);
     _messageContents = deserializeString(data, offset);
     _from_user_name = deserializeString(data, offset);
     _from_user_id = deserializeInt(data, offset);

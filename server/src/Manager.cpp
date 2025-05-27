@@ -33,28 +33,31 @@ size_t Manager::getQueueSize() {
 }
 
 void Manager::sendRoutingTestMessage(std::shared_ptr<MessageInterface>& work, const std::string& functionName) {
+    std::cout << "Sending routing test message for function: " << functionName << std::endl;
     MessageBuilder responseBuilder;
-    responseBuilder.setMessageType(work->getMessageType());
-    responseBuilder.setMessageContents(functionName);
-    responseBuilder.setSuccessBit(true);
-    responseBuilder.setFromUser(work->getFromUsername(), work->getFromUserID());
-    responseBuilder.setToChatroom(work->getToChatroomID());
-    auto responseMessage = responseBuilder.build();
-    _server.sendMessageToClient(work->getToUserID(), responseMessage);
     try {
         responseBuilder.setMessageType(work->getMessageType());
         responseBuilder.setMessageContents(functionName);
         responseBuilder.setSuccessBit(true);
         responseBuilder.setFromUser(work->getFromUsername(), work->getFromUserID());
+        responseBuilder.setToUser(work->getFromUsername(), work->getFromUserID());
         responseBuilder.setToChatroom(work->getToChatroomID());
         auto responseMessage = responseBuilder.build();
-        _server.sendMessageToClient(work->getToUserID(), responseMessage);
+        
+        std::cout << "Attempting to send response to client " << work->getFromUserID() << std::endl;
+        bool sendSuccess = _server.sendMessageToClient(work->getFromUserID(), responseMessage);
+        if (!sendSuccess) {
+            throw std::runtime_error("Failed to send routing test response");
+        }
+        std::cout << "Successfully sent response for " << functionName << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error in sendRoutingTestMessage: " << e.what() << std::endl;   
         responseBuilder.setSuccessBit(false);
-        responseBuilder.setMessageContents("sendRoutingTestMessage");
+        responseBuilder.setMessageContents(functionName);
+        responseBuilder.setFromUser(work->getFromUsername(), work->getFromUserID());
+        responseBuilder.setToUser(work->getFromUsername(), work->getFromUserID());
         auto failedMessage = responseBuilder.build();
-        _server.sendMessageToClient(work->getToUserID(), failedMessage);
+        _server.sendMessageToClient(work->getFromUserID(), failedMessage);
         throw std::runtime_error("Error in sendRoutingTestMessage: " + std::string(e.what()));
     }
 }

@@ -30,7 +30,6 @@ class LoadBalancer{
         void initManagers(const int managerAmount, Server& server);
         void addManager(int id, std::shared_ptr<Manager> manager);
         void pushWork(std::shared_ptr<MessageInterface>& work);
-        void pushWork(std::shared_ptr<MessageInterface>&& work);
         inline std::unordered_map<int, std::shared_ptr<Manager>> getManagers() const {return _managers;};
         void stopAllThreads();
         ~LoadBalancer();

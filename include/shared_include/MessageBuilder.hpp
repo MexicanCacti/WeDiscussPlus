@@ -24,6 +24,8 @@ private:
 
     std::shared_ptr<MessageInterface> buildLogoutMessage();
 
+    std::shared_ptr<MessageInterface> buildLogRequestMessage();
+
 protected:
     bool _success_bit;
     std::string _messageContents;

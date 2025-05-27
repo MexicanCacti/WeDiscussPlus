@@ -76,10 +76,9 @@ void compareChatrooms(const std::vector<ChatroomData>& chatrooms, const std::vec
             const auto& expectedMsg = expectedChatrooms[i].messages[j];
             EXPECT_EQ(msg->getMessageType(), expectedMsg->getMessageType());
             EXPECT_EQ(msg->getMessageContents(), expectedMsg->getMessageContents());
-            EXPECT_EQ(msg->getToUsername(), expectedMsg->getToUsername());
-            EXPECT_EQ(msg->getToUserID(), expectedMsg->getToUserID());
             EXPECT_EQ(msg->getFromUsername(), expectedMsg->getFromUsername());
             EXPECT_EQ(msg->getFromUserID(), expectedMsg->getFromUserID());
+            EXPECT_EQ(msg->getToChatroomID(), expectedMsg->getToChatroomID());
         }
     }
 }
@@ -266,7 +265,6 @@ TEST(MessageTest, AuthResponseMessage) {
     builder.setSuccessBit(successBit);
     builder.setMessageContents(messageContents);
     builder.setToUser(toUsername, toUserID);
-    builder.setFromUser(fromUsername, fromUserID);
     builder.setUserMap(testUserMap);
     builder.setChatrooms(testChatrooms);
     builder.setInbox(testInbox);
@@ -279,7 +277,7 @@ TEST(MessageTest, AuthResponseMessage) {
     size_t offset = 0;
     auto deserialized = MessageFactory::deserialize(serialized, offset);
 
-    ExpectMessageState(deserialized, successBit, "", toUsername, toUserID, 
+    ExpectMessageState(deserialized, successBit, messageContents, toUsername, toUserID, 
                       fromUsername, fromUserID, toChatroomID);
 
     std::stringstream buffer;

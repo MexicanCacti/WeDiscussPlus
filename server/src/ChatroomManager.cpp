@@ -44,6 +44,7 @@ void ChatroomManager::addUserToChatroom(std::shared_ptr<MessageInterface>& work)
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::ADD_USER_TO_CHATROOM);
     try {
         responseBuilder.setMessageContents("addUserToChatroom");
         responseBuilder.setSuccessBit(true);
@@ -68,6 +69,7 @@ void ChatroomManager::sendMessageToChatroom(std::shared_ptr<MessageInterface>& w
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::SEND_MESSAGE_TO_CHATROOM);
     try {     
         responseBuilder.setMessageContents("sendMessageToChatroom");
         responseBuilder.setSuccessBit(true);
@@ -92,6 +94,7 @@ void ChatroomManager::createChatroom(std::shared_ptr<MessageInterface>& work) {
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::CREATE_CHATROOM);
     try {
         // TODO: Add chatroom to database, add to _chatroomMap
         responseBuilder.setMessageContents("createChatroom");
@@ -117,6 +120,7 @@ void ChatroomManager::deleteChatroom(std::shared_ptr<MessageInterface>& work) {
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::DELETE_CHATROOM);
     try {
         std::unique_lock<std::shared_mutex> lock(_chatroomMapMutex);
         // TODO: Delete chatroom from database, let members know that the chatroom has been deleted, remove from _chatroomMap
@@ -144,6 +148,7 @@ void ChatroomManager::removeUserFromChatroom(std::shared_ptr<MessageInterface>& 
     #endif
 
     MessageBuilder responseBuilder;
+    responseBuilder.setMessageType(MessageType::REMOVE_USER_FROM_CHATROOM);
     try {
         std::unique_lock<std::shared_mutex> lock(_chatroomMapMutex);
         // TODO: Remove user from chatroom, (update database?) & chatroom object, let members know that the user has been removed, remove from _chatroomMap

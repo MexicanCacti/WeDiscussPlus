@@ -1,7 +1,6 @@
 #include "AuthResponseMessage.hpp"
 
 AuthResponseMessage::AuthResponseMessage(const std::vector<char>& data, size_t& offset) {
-    _messageType = MessageType::AUTH_RESPONSE;
     deserialize(data, offset);
 }
 
@@ -23,7 +22,7 @@ std::vector<char> AuthResponseMessage::serialize() const {
     serializeInt(buffer, static_cast<int>(_messageType));
     
     serializeInt(buffer, _success_bit ? 1 : 0);
-    serializeInt(buffer, static_cast<int>(_to_user_id));
+    serializeInt(buffer, _to_user_id);
     serializeString(buffer, _to_user_name);
 
     serializeInt(buffer, static_cast<int>(_userMap.size()));
@@ -58,12 +57,13 @@ std::vector<char> AuthResponseMessage::serialize() const {
 }
 
 void AuthResponseMessage::deserialize(const std::vector<char>& data, size_t& offset) {
-    _success_bit = deserializeInt(data, offset) == 1;
+    _success_bit = deserializeInt(data, offset);
     _to_user_id = deserializeInt(data, offset);
     _to_user_name = deserializeString(data, offset);
     
     int userMapSize = deserializeInt(data, offset);
-    for (int i = 0; i < userMapSize; i++) {
+    _userMap.clear();
+    for (int i = 0; i < userMapSize; ++i) {
         int id = deserializeInt(data, offset);
         std::string name = deserializeString(data, offset);
         _userMap[id] = name;
@@ -97,9 +97,9 @@ void AuthResponseMessage::deserialize(const std::vector<char>& data, size_t& off
 void AuthResponseMessage::printMessage() const {
     std::cout << "Authentication Response Message:\n"
               << "  Success: " << (_success_bit ? "Yes" : "No") << "\n"
+              << "  To User ID: " << _to_user_id << "\n"
+              << "  To User Name: " << _to_user_name << "\n"
               << "  User Map Size: " << _userMap.size() << "\n"
               << "  Chatrooms: " << _chatrooms.size() << "\n"
-              << "  Inbox Messages: " << _inbox.size() << "\n"
-              << "  To User ID: " << _to_user_id << "\n"
-              << "  To User Name: " << _to_user_name << "\n";
+              << "  Inbox Messages: " << _inbox.size() << "\n";
 } 

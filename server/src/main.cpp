@@ -8,6 +8,9 @@ static const int defaultPort = 3333;
 static const std::string defaultIP = "127.0.0.1";
 
 int main(int argc, char* argv[]) {
+    #ifdef _MOCK_TESTING
+        std::cout << "Mock testing enabled" << std::endl;
+    #endif
     int port = defaultPort;
     std::string ip = defaultIP;
 

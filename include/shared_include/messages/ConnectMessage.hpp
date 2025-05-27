@@ -5,7 +5,7 @@
 // Initial connection and authentication
 class ConnectMessage : public MessageInterface {
     public:
-        ConnectMessage() { _messageType = MessageType::CONNECT;}
+        ConnectMessage() = default;
 
         ConnectMessage(const std::vector<char>& data, size_t& offset);
 

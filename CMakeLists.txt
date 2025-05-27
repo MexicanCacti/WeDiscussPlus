@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(WeDiscuss++ LANGUAGES CXX)
+project(WeDiscuss++ LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -67,7 +67,7 @@ endif()
 #Recursively build other projects
 #add_subdirectory(client)
 add_subdirectory(server)
-#add_subdirectory(demo_client)
+add_subdirectory(demo_client)
 #add_subdirectory(demo_server)
 add_subdirectory(tests)
 

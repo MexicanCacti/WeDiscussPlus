@@ -12,7 +12,7 @@ struct ChatroomData {
 // Chatroom communication
 class ChatroomMessage : public MessageInterface {
     public:
-        ChatroomMessage() { _messageType = MessageType::SEND_MESSAGE_TO_CHATROOM; }
+        ChatroomMessage() = default;
         ChatroomMessage(const std::vector<char>& data, size_t& offset);
         
         std::vector<char> serialize() const override;

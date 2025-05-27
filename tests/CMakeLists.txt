@@ -12,6 +12,5 @@ FetchContent_MakeAvailable(google_test)
 
 include_directories(${CMAKE_SOURCE_DIR}/tests)
 
-#add_subdirectory(mock_objects)
 add_subdirectory(message_test)
-#add_subdirectory(routing_test)
+add_subdirectory(routing_test)

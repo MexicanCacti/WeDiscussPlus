@@ -16,7 +16,9 @@ void LogManager::processWork(std::shared_ptr<MessageInterface>& work) {
         switch(work->getMessageType()){
             case MessageType::GET_TO_USER_MESSAGES:
             case MessageType::GET_FROM_USER_MESSAGES:
+            case MessageType::GET_BETWEEN_USERS_MESSAGES:
             case MessageType::GET_CHATROOM_MESSAGES:
+            case MessageType::GET_CHATROOM_MESSAGES_FROM_USER:
                 answerLogRequest(work);
                 break;
             case MessageType::STORE_CONNECT_LOG:
@@ -52,8 +54,8 @@ void LogManager::answerLogRequest(std::shared_ptr<MessageInterface>& message) {
     #ifdef _MOCK_TESTING
         std::string functionCalled;
         switch(message->getMessageType()){
-            case MessageType::GET_USER_MESSAGES:
-                functionCalled = "getUserMessages";
+            case MessageType::GET_TO_USER_MESSAGES:
+                functionCalled = "getToUserMessages";
                 break;
             case MessageType::GET_FROM_USER_MESSAGES:
                 functionCalled = "getFromUserMessages";

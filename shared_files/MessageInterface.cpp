@@ -1,5 +1,6 @@
 #include "MessageInterface.hpp"
 #include <cstring>
+#include <iostream>
 
 void MessageInterface::serializeInt(std::vector<char>& buffer, int val) {
     char* p = reinterpret_cast<char*>(&val); // Geting ptr to first byte of the val
@@ -31,6 +32,8 @@ std::string MessageInterface::messageTypeToString(const MessageType& messageType
             return "CONNECT";
         case MessageType::AUTHENTICATE:
             return "AUTHENTICATE";
+        case MessageType::AUTH_RESPONSE:
+            return "AUTH_RESPONSE";
         case MessageType::LOGOUT:
             return "LOGOUT";
         case MessageType::ADD_USER:

@@ -11,7 +11,7 @@ struct UserData {
 // User-to-user communication
 class UserMessage : public MessageInterface {
     public:
-        UserMessage() { _messageType = MessageType::SEND_MESSAGE_TO_USER; }
+        UserMessage() = default;
         UserMessage(const std::vector<char>& data, size_t& offset);
         
         std::vector<char> serialize() const override;

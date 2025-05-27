@@ -1,7 +1,6 @@
 #include "UserMessage.hpp"
 
 UserMessage::UserMessage(const std::vector<char>& data, size_t& offset) {
-    _messageType = MessageType::SEND_MESSAGE_TO_USER;
     deserialize(data, offset);
 }
 

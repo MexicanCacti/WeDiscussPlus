@@ -59,6 +59,10 @@ void Server::startServer(){
             }
         }).detach();
         
+        #ifdef _DEBUG
+        std::cout << "Server: All manager balancers ready" << std::endl;
+        #endif
+        
         listenForConnections();
 
     } catch (const std::exception& e) {
@@ -119,7 +123,6 @@ void Server::listenForConnections(){
 
 void Server::registerClient(std::shared_ptr<tcp::socket> clientSocket){
     try {
-
         auto messageOpt = readMessageFromSocket(*clientSocket);
         if (!messageOpt) {
             throw std::runtime_error("Failed to read message from socket");
@@ -137,6 +140,7 @@ void Server::registerClient(std::shared_ptr<tcp::socket> clientSocket){
             #endif
 
             MessageBuilder responseBuilder;
+            responseBuilder.setMessageType(MessageType::CONNECT);
             #ifdef _MOCK_TESTING
                 responseBuilder.setMessageContents("server");
             #endif
@@ -167,6 +171,7 @@ void Server::registerClient(std::shared_ptr<tcp::socket> clientSocket){
                 std::cerr << "Unexpected message type in registerClient: " << MessageInterface::messageTypeToString(messageType) << std::endl;
             #endif
             MessageBuilder responseBuilder;
+            responseBuilder.setMessageType(messageType);
             #ifdef _MOCK_TESTING
                 responseBuilder.setMessageContents("server");
             #endif
@@ -195,6 +200,7 @@ void Server::registerFromClientSocket(std::shared_ptr<tcp::socket> clientSocket,
             std::cout << "Client ID: " << tempID << " registered FROM client socket" << std::endl;
         #endif
 
+        responseBuilder.setMessageType(MessageType::CONNECT);
         responseBuilder.setSuccessBit(true);
         responseBuilder.setFromUser(message->getFromUsername(), tempID);
         responseBuilder.setToUser(message->getFromUsername(), tempID);
@@ -245,7 +251,6 @@ void Server::handleClient(int clientID){
                 // Route message to appropriate manager based on type
                 MessageType messageType = message->getMessageType();
                 switch(messageType) {
-                    case MessageType::AUTHENTICATE:
                     case MessageType::LOGOUT:
                     case MessageType::ADD_USER:
                     case MessageType::CHANGE_USER_PASSWORD:
@@ -253,7 +258,7 @@ void Server::handleClient(int clientID){
                     case MessageType::DELETE_USER:
                     case MessageType::SEND_MESSAGE_TO_USER:
                         #ifdef _DEBUG
-                        std::cout << "Routing to UserManager: " << MessageInterface::messageTypeToString(messageType) << std::endl;
+                            std::cout << "Routing to UserManager: " << MessageInterface::messageTypeToString(messageType) << std::endl;
                         #endif
                         _userManagerBalancer->pushWork(message);
                         break;
@@ -264,7 +269,7 @@ void Server::handleClient(int clientID){
                     case MessageType::SEND_MESSAGE_TO_CHATROOM:
                     case MessageType::REMOVE_USER_FROM_CHATROOM:
                         #ifdef _DEBUG
-                        std::cout << "Routing to ChatroomManager: " << MessageInterface::messageTypeToString(messageType) << std::endl;
+                            std::cout << "Routing to ChatroomManager: " << MessageInterface::messageTypeToString(messageType) << std::endl;
                         #endif
                         _chatroomManagerBalancer->pushWork(message);
                         break;
@@ -275,19 +280,20 @@ void Server::handleClient(int clientID){
                     case MessageType::GET_CHATROOM_MESSAGES:
                     case MessageType::GET_CHATROOM_MESSAGES_FROM_USER:
                         #ifdef _DEBUG
-                        std::cout << "Routing to LogManager: " << MessageInterface::messageTypeToString(messageType) << std::endl;
+                            std::cout << "Routing to LogManager: " << MessageInterface::messageTypeToString(messageType) << std::endl;
                         #endif
                         _logManagerBalancer->pushWork(message);
                         break;
-                    
                     default:
                         #ifdef _DEBUG
-                        std::cerr << "Unknown message type received: " << MessageInterface::messageTypeToString(messageType) << std::endl;
+                            std::cerr << "Unknown message type received: " << MessageInterface::messageTypeToString(messageType) << std::endl;
                         #endif
                         MessageBuilder responseBuilder;
-                        responseBuilder.setMessageType(MessageType::UNDEFINED);
+                        responseBuilder.setMessageType(messageType);
                         responseBuilder.setSuccessBit(false);   
                         responseBuilder.setMessageContents("server");
+                        responseBuilder.setFromUser(message->getFromUsername(), message->getFromUserID());
+                        responseBuilder.setToUser(message->getFromUsername(), message->getFromUserID());
                         auto response = responseBuilder.build();
                         sendMessageToClient(clientID, response);
                         break;
@@ -320,6 +326,8 @@ void Server::handleClient(int clientID){
 bool Server::sendMessageToSocket(tcp::socket& socket, std::shared_ptr<MessageInterface> message) {
     try {
         std::vector<char> data = message->serialize();
+        int msgSize = static_cast<int>(data.size());
+        asio::write(socket, asio::buffer(&msgSize, sizeof(int)));
         asio::write(socket, asio::buffer(data));
         return true;
     } catch (const std::exception& e) {
@@ -344,9 +352,15 @@ bool Server::sendConnectMessage(int clientID, std::shared_ptr<MessageInterface> 
         #endif
         auto it = _clientSocketMap.find(clientID);
         if (it == _clientSocketMap.end() || !it->second.fromSocket) {
+            #ifdef _DEBUG
+                std::cerr << "Client socket not found for client ID: " << clientID << std::endl;
+            #endif
             return false;
         }
         if (!it->second.fromSocket->is_open()) {
+            #ifdef _DEBUG
+                std::cerr << "Client socket is closed for client ID: " << clientID << std::endl;
+            #endif
             return false;
         }
         fromSocket = it->second.fromSocket;
@@ -397,7 +411,7 @@ std::optional<std::shared_ptr<MessageInterface>> Server::readMessageFromSocket(t
 
 std::optional<std::shared_ptr<MessageInterface>> Server::readMessageFromClient(int clientID) {
     std::shared_ptr<tcp::socket> fromSocket;
-    {
+    {   
         auto socketMutex = getClientSocketMutex(clientID);
         if (!socketMutex) {
             return std::nullopt;
@@ -417,6 +431,9 @@ bool Server::sendMessageToClient(int clientID, std::shared_ptr<MessageInterface>
     {
         auto socketMutex = getClientSocketMutex(clientID);
         if (!socketMutex) {
+            #ifdef _DEBUG
+                std::cerr << "Client mutex not found for client ID: " << clientID << std::endl;
+            #endif
             return false;
         }
         std::lock_guard<std::mutex> lock(*socketMutex.value());
@@ -425,9 +442,15 @@ bool Server::sendMessageToClient(int clientID, std::shared_ptr<MessageInterface>
         #endif
         auto it = _clientSocketMap.find(clientID);
         if (it == _clientSocketMap.end() || !it->second.toSocket) {
+            #ifdef _DEBUG
+                std::cerr << "Client socket not found for client ID: " << clientID << std::endl;
+            #endif
             return false;
         }
         if (!it->second.toSocket->is_open()) {
+            #ifdef _DEBUG
+                std::cerr << "Client socket is closed for client ID: " << clientID << std::endl;
+            #endif
             return false;
         }
         toSocket = it->second.toSocket;

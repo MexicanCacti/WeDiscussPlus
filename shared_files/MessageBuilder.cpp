@@ -1,9 +1,4 @@
 #include "MessageBuilder.hpp"
-#include "MessageInterface.hpp"
-#include "ConnectMessage.hpp"
-#include "AuthMessage.hpp"
-#include "UserMessage.hpp"
-#include "ChatroomMessage.hpp"
 
 void MessageBuilder::setSuccessBit(bool success) {
     _success_bit = success;
@@ -78,8 +73,6 @@ std::shared_ptr<MessageInterface> MessageBuilder::buildAuthResponseMessage() {
     msg->_messageContents = _messageContents;
     msg->_to_user_name = _to_user_name;
     msg->_to_user_id = _to_user_id;
-    msg->_from_user_name = _from_user_name;
-    msg->_from_user_id = _from_user_id;
     msg->setUserMap(_userMap);
     msg->setChatrooms(_chatrooms);
     msg->setInbox(_inbox);
@@ -120,6 +113,19 @@ std::shared_ptr<MessageInterface> MessageBuilder::buildChatroomMessage() {
     return msg;
 }
 
+std::shared_ptr<MessageInterface> MessageBuilder::buildLogRequestMessage() {
+    auto msg = std::make_shared<LogRequestMessage>();
+    msg->_messageType = _messageType;
+    msg->_success_bit = _success_bit;
+    msg->_messageContents = _messageContents;
+    msg->_from_user_name = _from_user_name;
+    msg->_from_user_id = _from_user_id;
+    msg->_to_user_name = _to_user_name;
+    msg->_to_user_id = _to_user_id;
+    msg->_to_chatroom_id = _to_chatroom_id;
+    return msg;
+}
+
 std::shared_ptr<MessageInterface> MessageBuilder::build() {
     switch (_messageType) {
         case MessageType::CONNECT:
@@ -142,6 +148,12 @@ std::shared_ptr<MessageInterface> MessageBuilder::build() {
         case MessageType::CREATE_CHATROOM:
         case MessageType::DELETE_CHATROOM:
             return buildChatroomMessage();
+        case MessageType::GET_TO_USER_MESSAGES:
+        case MessageType::GET_FROM_USER_MESSAGES:
+        case MessageType::GET_BETWEEN_USERS_MESSAGES:
+        case MessageType::GET_CHATROOM_MESSAGES:
+        case MessageType::GET_CHATROOM_MESSAGES_FROM_USER:
+            return buildLogRequestMessage();
         default:
             throw std::runtime_error("Unknown message type: " + 
                 std::to_string(static_cast<int>(_messageType)));

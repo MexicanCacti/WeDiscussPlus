@@ -20,13 +20,11 @@ if(DEFINED _DEBUG)
     target_compile_definitions(server PRIVATE _DEBUG)
 endif()
 
-# Propagate _MOCK_TESTING flag if it's defined
-if(DEFINED _MOCK_TESTING)
-    target_compile_definitions(server PRIVATE _MOCK_TESTING)
-endif()
-
 add_executable(WeDiscussServer main.cpp)
 target_link_libraries(WeDiscussServer PRIVATE server)
+
+# Explicitly undefine _MOCK_TESTING for the main server executable
+target_compile_definitions(WeDiscussServer PRIVATE -U_MOCK_TESTING)
 
 target_include_directories(WeDiscussServer PRIVATE ${SHARED_INCLUDE_HEADERS} ${SERVER_INCLUDE_HEADERS})
 

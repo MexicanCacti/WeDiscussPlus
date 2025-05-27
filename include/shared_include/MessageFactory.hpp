@@ -4,6 +4,8 @@
 #include "messages/UserMessage.hpp"
 #include "messages/ChatroomMessage.hpp"
 #include "messages/AuthMessage.hpp"
+#include "messages/AuthResponseMessage.hpp"
+#include "messages/LogRequestMessage.hpp"
 #include <stdexcept>
 
 class MessageFactory {
