@@ -7,10 +7,6 @@ std::unordered_map<int, std::string> UserManager::_userIDToUsername;
 std::shared_mutex UserManager::_userLookupMutex;
 std::unordered_map<int, bool> UserManager::_clientHandlerStarted;
 
-void UserManager::setUpDatabaseConnection() {
-    
-}
-
 void UserManager::processWork(std::shared_ptr<MessageInterface>& work) {
     #ifdef _DEBUG
         std::cout << "UserManager processing message type: " << MessageInterface::messageTypeToString(work->getMessageType()) << std::endl;

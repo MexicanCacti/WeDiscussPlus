@@ -2,6 +2,13 @@ file(GLOB ROUTING_TEST_FILES ${CMAKE_SOURCE_DIR}/tests/routing_test/*.cpp)
 
 set(ROUTING_TEST_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/build/bin)
 
+# Create test database directory in the test directory
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/build/temp/tests/routing_test/server_database)
+
+# Copy schema file to the test directory
+file(COPY ${CMAKE_SOURCE_DIR}/tests/test_database/test_schema.sql 
+     DESTINATION ${CMAKE_SOURCE_DIR}/build/temp/tests/routing_test/server_database)
+
 # Create a separate server library target for testing
 file(GLOB SERVER_TEST_SOURCES ${CMAKE_SOURCE_DIR}/server/src/*.cpp)
 file(GLOB_RECURSE SHARED_INCLUDE_HEADERS include/shared_include/*.hpp)
@@ -15,6 +22,7 @@ target_include_directories(server_test PUBLIC
     ${CMAKE_SOURCE_DIR}/include/shared_include/messages
     ${CMAKE_SOURCE_DIR}/libs/asio-1.30.2/include
     ${CMAKE_SOURCE_DIR}/libs/sqlite3
+    ${CMAKE_SOURCE_DIR}/tests/test_database
 )
 
 # Define _DEBUG and _MOCK_TESTING for the test server library

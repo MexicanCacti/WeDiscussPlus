@@ -2,10 +2,11 @@
 
 // Core Server Operations
 
-Server::Server(const std::string& ip, int port) 
+Server::Server(const std::string& ip, int port, const std::string& dbPath, const std::string& schemaPath) 
     : _port(port), 
       _ioContext(),
-      _connectionAcceptor(_ioContext, tcp::endpoint(asio::ip::make_address(ip), port)) {}
+      _connectionAcceptor(_ioContext, tcp::endpoint(asio::ip::make_address(ip), port)),
+      _db(std::make_unique<Database>(dbPath, schemaPath)) {};
 
 void Server::startServer(){
     try {
@@ -81,7 +82,7 @@ void Server::stopServer(){
     if (_connectionAcceptor.is_open()) {
         _connectionAcceptor.close();
     }
-    
+    _db->close();
     _ioContext.stop();
 }
 

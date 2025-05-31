@@ -27,7 +27,8 @@ class Server {
         bool _isRunning = false;
         asio::io_context _ioContext;
         tcp::acceptor _connectionAcceptor;
-        
+        std::unique_ptr<Database> _db; // TODO: Init Database in constructor
+
         // Socket management
         static inline int _tempClientID = 0; // Temp Ids decrement, wrap back when at limit. When Assigning: --_tempClientID
         struct ClientSockets {
@@ -62,8 +63,9 @@ class Server {
         
 
     public:
-        Server(const std::string& ip, int port);
+        Server(const std::string& ip, int port, const std::string& dbPath, const std::string& schemaPath);
         ~Server() {stopServer();}
+        Database* getDatabase() {return _db.get();}
 
         // Core server operations
         void startServer();

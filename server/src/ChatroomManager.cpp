@@ -4,10 +4,6 @@
 std::unordered_map<int, Chatroom> ChatroomManager::_chatroomMap;
 std::shared_mutex ChatroomManager::_chatroomMapMutex;
 
-void ChatroomManager::setUpDatabaseConnection() {
-    // Set up connection to database & set up maps!
-}
-
 void ChatroomManager::processWork(std::shared_ptr<MessageInterface>& work) {
     #ifdef _DEBUG
     std::cout << "ChatroomManager processing message type: " << MessageInterface::messageTypeToString(work->getMessageType()) << std::endl;

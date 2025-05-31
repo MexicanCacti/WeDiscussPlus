@@ -21,7 +21,7 @@ class ManagerInterface {
         Server& _server;
         std::mutex _processQueueMutex;
         std::atomic<bool> _shouldDoWork = true;
-        std::shared_ptr<Database> _db; 
+        std::unique_ptr<sqlite3*> _db; 
 
     public:
         ManagerInterface(Server& server) : _server(server) {};
@@ -31,7 +31,6 @@ class ManagerInterface {
         virtual size_t getQueueSize() = 0;
         virtual void setUpDatabaseConnection() = 0;
         
-        Database& getDatabase() { return *_db; }
         bool isDatabaseInitialized() const { return _db != nullptr; }
         virtual void sendRoutingTestMessage(std::shared_ptr<MessageInterface>& work, const std::string& functionName) = 0;
 };
@@ -45,6 +44,7 @@ class Manager : public ManagerInterface {
         void addWork(std::shared_ptr<MessageInterface>& work);
         void handleClient() override;
         size_t getQueueSize() override;
-        virtual void setUpDatabaseConnection() override = 0;
+        void setUpDatabaseConnection() override;
         void sendRoutingTestMessage(std::shared_ptr<MessageInterface>& work, const std::string& functionName) override;
+        ~Manager() {_db.release();}
 };

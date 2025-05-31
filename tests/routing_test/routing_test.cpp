@@ -14,9 +14,18 @@
 #include <asio.hpp>
 #include <vector>
 #include <future>
+#include <filesystem>
 
 using namespace std::chrono_literals;
 using asio::ip::tcp;
+
+// Get database paths relative to executable
+std::pair<std::string, std::string> getDatabasePaths() {
+    std::filesystem::path exeDir = std::filesystem::current_path();
+    std::string dbPath = (exeDir / "server_database" / "database.db").string();
+    std::string schemaPath = (exeDir / "server_database" / "test_schema.sql").string();
+    return {dbPath, schemaPath};
+}
 
 asio::io_context context;
 tcp::resolver resolver(context);
@@ -41,8 +50,9 @@ protected:
 
     static void SetUpTestSuite() {
         try {
+            auto [dbPath, schemaPath] = getDatabasePaths();
             std::cout << "Creating server..." << std::endl;
-            _server = std::make_unique<Server>("127.0.0.1", 3333);
+            _server = std::make_unique<Server>("127.0.0.1", 3333, dbPath, schemaPath);
             
             std::promise<void> serverStarted;
             std::future<void> serverStartedFuture = serverStarted.get_future();

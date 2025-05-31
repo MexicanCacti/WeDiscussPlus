@@ -1,64 +1,80 @@
 #include "Database.hpp"
-#include <iostream>
+#include <filesystem>
 
-void Database::initDatabase(const std::string& dbPath){
-    const char* UserTable = R"(
-        CREATE TABLE IF NOT EXISTS Users (
-            ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            inboxID INTEGER AUTOINCREMENT,
-            FOREIGN KEY (inboxID) REFERENCES InboxTable(inboxKey)
-        );
-    )";
+bool Database::initDatabase(const std::string& dbPath, const std::string& schemaPath) {
+    #ifdef _DEBUG
+    std::cout << "Initializing database with path: " << dbPath << std::endl;
+    std::cout << "Schema path: " << schemaPath << std::endl;
+    #endif
 
-    const char* InboxTable = R"(
-        CREATE TABLE IF NOT EXISTS InboxTable (
-            inboxKey INTEGER PRIMARY KEY AUTOINCREMENT,
-            userID INTEGER NOT NULL,
-            messageID TEXT NOT NULL,
-            FOREIGN KEY (userID) REFERENCES Users(id),
-            FOREIGN KEY (messageID) REFERENCES MessageTable(messageId)
-        );
-    )";
+    std::filesystem::path absDbPath = std::filesystem::absolute(dbPath);
+    std::filesystem::path absSchemaPath = std::filesystem::absolute(schemaPath);
+    
+    #ifdef _DEBUG
+    std::cout << "Absolute database path: " << absDbPath << std::endl;
+    std::cout << "Absolute schema path: " << absSchemaPath << std::endl;
+    #endif
 
-    const char* ChatroomTable = R"(
-        CREATE TABLE IF NOT EXISTS ChatroomTable (
-            chatroomID INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-    )";
+    std::filesystem::create_directories(absDbPath.parent_path());
+    #ifdef _DEBUG
+    std::cout << "Database directory created/verified at: " << absDbPath.parent_path() << std::endl;
+    #endif
 
-    const char* ChatroomMembersTable = R"(
-        CREATE TABLE IF NOT EXISTS ChatroomMembersTable (
-            chatroomID INTEGER NOT NULL,
-            userID INTEGER NOT NULL,
-            joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (chatroomID, userID),
-            FOREIGN KEY (chatroomID) REFERENCES ChatroomTable(chatroomID),
-            FOREIGN KEY (userID) REFERENCES Users(ID)
-        );
-    )";
+    if (sqlite3_open(absDbPath.string().c_str(), &_db) != SQLITE_OK) {
+        std::cerr << "Can't open DB: " << sqlite3_errmsg(_db) << std::endl;
+        return false;
+    }
+    #ifdef _DEBUG
+    std::cout << "Database opened successfully" << std::endl;
+    #endif
 
-    const char* ChatroomMessagesTable = R"(
-        CREATE TABLE IF NOT EXISTS ChatroomMessagesTable (
-            chatroomID INTEGER NOT NULL,
-            messageID TEXT NOT NULL,
-            sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (chatroomID, messageID),
-            FOREIGN KEY (chatroomID) REFERENCES ChatroomTable(chatroomID),
-            FOREIGN KEY (messageID) REFERENCES MessageTable(messageId)
-        );
-    )";
+    std::ifstream schemaFile(absSchemaPath);
+    if (!schemaFile.is_open()) {
+        std::cerr << "Could not open schema file: " << absSchemaPath << std::endl;
+        return false;
+    }
+    #ifdef _DEBUG
+    std::cout << "Schema file opened successfully" << std::endl;
+    #endif
 
-    const char* MessageTable = R"(
-        CREATE TABLE IF NOT EXISTS MessageTable (
-            messageId TEXT PRIMARY KEY,
-            messageData TEXT NOT NULL,
-            senderId INTEGER NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (senderId) REFERENCES Users(id)
-        );
-    )";    
+    std::string sql((std::istreambuf_iterator<char>(schemaFile)),
+                    std::istreambuf_iterator<char>());
+    #ifdef _DEBUG
+    std::cout << "Schema SQL loaded: " << sql.substr(0, 100) << "..." << std::endl;
+    #endif
+
+    char* errMsg = nullptr;
+    int rc = sqlite3_exec(_db, sql.c_str(), nullptr, nullptr, &errMsg);
+
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+    #ifdef _DEBUG
+    std::cout << "Schema executed successfully" << std::endl;
+    #endif
+
+    return true;
+}
+
+bool Database::isConnected() const {
+    return _db != nullptr;
+}
+
+sqlite3* Database::getDatabaseConnection() const {
+    sqlite3* db = nullptr;
+    std::filesystem::path absDbPath = std::filesystem::absolute(_dbPath);
+    if(sqlite3_open(absDbPath.string().c_str(), &db) != SQLITE_OK){
+        std::cerr << "Can't open DB: " << sqlite3_errmsg(db) << std::endl;
+        return nullptr;
+    }
+    return db;
+}
+
+void Database::close() {
+    if(_db) {
+        sqlite3_close(_db);
+        _db = nullptr;
+    }
 }

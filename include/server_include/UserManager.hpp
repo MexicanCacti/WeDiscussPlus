@@ -28,7 +28,6 @@ class UserManager : public Manager {
         void deleteUser(std::shared_ptr<MessageInterface>& work);
         void sendMessageToUser(std::shared_ptr<MessageInterface>& work);
         void processWork(std::shared_ptr<MessageInterface>& work) override;
-        void setUpDatabaseConnection() override;
     public:
-        UserManager(Server& server) : Manager(server) {this->setUpDatabaseConnection();}
+        UserManager(Server& server) : Manager(server) {setUpDatabaseConnection();}
 };

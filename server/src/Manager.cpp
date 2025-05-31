@@ -61,3 +61,7 @@ void Manager::sendRoutingTestMessage(std::shared_ptr<MessageInterface>& work, co
         throw std::runtime_error("Error in sendRoutingTestMessage: " + std::string(e.what()));
     }
 }
+
+void Manager::setUpDatabaseConnection() {
+    _db = std::make_unique<sqlite3*>(_server.getDatabase()->getDatabaseConnection());
+}

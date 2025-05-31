@@ -3,10 +3,6 @@
 #include <chrono>
 using namespace std::chrono_literals;
 
-void LogManager::setUpDatabaseConnection(){
-    // Set up connection to database & set up maps!
-}
-
 void LogManager::processWork(std::shared_ptr<MessageInterface>& work) {
     try{
         #ifdef _DEBUG   
